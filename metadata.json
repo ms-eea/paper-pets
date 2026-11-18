@@ -1,0 +1,8 @@
+{
+  "name": "Paper Pets",
+  "description": "A cozy 2D scrapbook and sticker-style virtual pet game featuring custom Procreate animals, layered patterned dress-up, resizable room decorating, care meters, and coin-earning mini-games.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
