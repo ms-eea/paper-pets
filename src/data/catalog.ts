@@ -10,6 +10,12 @@ import {
   PlacedDecoration,
   TreatItemDef,
 } from '../types/game';
+import buddybearSticker from '../assets/images/pet_buddybear_handdrawn_1795031825755.jpg';
+import cattySticker from '../assets/images/pet_catty_closeeyes_v2_1795032573398.jpg';
+import douggieSticker from '../assets/images/pet_douggie_closeeyes_1795032558315.jpg';
+import rawrSticker from '../assets/images/pet_rawr_bigeyes_1795032532399.jpg';
+import scorchSticker from '../assets/images/pet_scorch_hatready_1795033031221.jpg';
+import trotSticker from '../assets/images/pet_trot_level_1795032734996.jpg';
 
 export const PET_CATALOG: PetDefinition[] = [
   {
@@ -18,7 +24,7 @@ export const PET_CATALOG: PetDefinition[] = [
     species: 'Tiger Cub',
     personality: 'Bold, bouncy, and always ready for a snack.',
     trickLabel: 'Little Roar',
-    rawAsset: '/src/assets/images/pet_rawr_bigeyes_1795032532399.jpg',
+    rawAsset: rawrSticker,
     accentColor: '#E67E22',
     anchors: {
       hat: { x: 50, y: 13.5, scale: 0.78, rotate: 0 },
@@ -33,7 +39,7 @@ export const PET_CATALOG: PetDefinition[] = [
     species: 'Pocket Dragon',
     personality: 'Curious little flame-keeper who loves shiny crafts.',
     trickLabel: 'Fire Puff',
-    rawAsset: '/src/assets/images/pet_scorch_hatready_1795033031221.jpg',
+    rawAsset: scorchSticker,
     accentColor: '#2F7D6D',
     anchors: {
       hat: { x: 50, y: 13.5, scale: 0.78, rotate: 0 },
@@ -48,7 +54,7 @@ export const PET_CATALOG: PetDefinition[] = [
     species: 'Harvest Turkey',
     personality: 'Polite, dapper, and proud of every tail feather.',
     trickLabel: 'Feather Fan',
-    rawAsset: '/src/assets/images/pet_trot_level_1795032734996.jpg',
+    rawAsset: trotSticker,
     accentColor: '#9C6644',
     anchors: {
       hat: { x: 49, y: 29.5, scale: 0.7, rotate: 0 },
@@ -63,7 +69,7 @@ export const PET_CATALOG: PetDefinition[] = [
     species: 'Woodland Bear',
     personality: 'Gentle daydreamer who gives the warmest sticker hugs.',
     trickLabel: 'Big Hug',
-    rawAsset: '/src/assets/images/pet_buddybear_handdrawn_1795031825755.jpg',
+    rawAsset: buddybearSticker,
     accentColor: '#7F6A58',
     anchors: {
       hat: { x: 50, y: 10.5, scale: 0.76, rotate: 0 },
@@ -78,7 +84,7 @@ export const PET_CATALOG: PetDefinition[] = [
     species: 'Blossom Kitty',
     personality: 'Sweet-natured artist with an eye for cozy corners.',
     trickLabel: 'Happy Purr',
-    rawAsset: '/src/assets/images/pet_catty_closeeyes_v2_1795032573398.jpg',
+    rawAsset: cattySticker,
     accentColor: '#D97B93',
     anchors: {
       hat: { x: 49, y: 14.5, scale: 0.74, rotate: 0 },
@@ -93,7 +99,7 @@ export const PET_CATALOG: PetDefinition[] = [
     species: 'Golden Pup',
     personality: 'Playful, loyal, and always wagging for a game of fetch.',
     trickLabel: 'Happy Bark',
-    rawAsset: '/src/assets/images/pet_douggie_closeeyes_1795032558315.jpg',
+    rawAsset: douggieSticker,
     accentColor: '#C97A36',
     anchors: {
       hat: { x: 50, y: 11.5, scale: 0.8, rotate: 0 },

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { CalendarCheck, X } from 'lucide-react';
+import { CalendarCheck, Camera, X } from 'lucide-react';
 import { BottomDock } from './components/BottomDock';
 import { DailyCheckInModal } from './components/DailyCheckInModal';
 import { DecorateDrawer } from './components/drawers/DecorateDrawer';
@@ -36,6 +36,8 @@ export default function App() {
   const [petSquishing, setPetSquishing] = useState(false);
   const [petTrickActive, setPetTrickActive] = useState(false);
   const [particles, setParticles] = useState<StageParticle[]>([]);
+  const [photoMode, setPhotoMode] = useState(false);
+  const [showPhotoHint, setShowPhotoHint] = useState(false);
 
   const pauseDecay = screen !== 'PLAYING';
   const {
@@ -76,18 +78,34 @@ export default function App() {
     };
   }, []);
 
-  // Esc closes contextual drawers while playing
+  // Esc exits Photo Mode or closes contextual drawers while playing
   useEffect(() => {
     if (screen !== 'PLAYING') return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && activeDrawer !== 'none') {
-        setActiveDrawer('none');
-        setSelectedDecoId(null);
+      if (e.key === 'Escape') {
+        if (photoMode) {
+          sound.playClick();
+          setPhotoMode(false);
+        } else if (activeDrawer !== 'none') {
+          setActiveDrawer('none');
+          setSelectedDecoId(null);
+        }
       }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [screen, activeDrawer]);
+  }, [screen, activeDrawer, photoMode]);
+
+  // Briefly show and fade out Photo Mode instructions so screenshots stay spotless
+  useEffect(() => {
+    if (!photoMode) {
+      setShowPhotoHint(false);
+      return;
+    }
+    setShowPhotoHint(true);
+    const timer = window.setTimeout(() => setShowPhotoHint(false), 2400);
+    return () => window.clearTimeout(timer);
+  }, [photoMode]);
 
   const spawnBurst = useCallback((kind: StageParticle['kind'], label?: string) => {
     const colors =
@@ -222,8 +240,21 @@ export default function App() {
     [buyAndPlaceDecoration],
   );
 
+  const handleEnterPhotoMode = useCallback(() => {
+    sound.playClick();
+    setActiveDrawer('none');
+    setSelectedDecoId(null);
+    setPhotoMode(true);
+  }, []);
+
+  const handleExitPhotoMode = useCallback(() => {
+    sound.playClick();
+    setPhotoMode(false);
+  }, []);
+
   const handleLaunchMiniGame = useCallback((gameId: MiniGameId) => {
     sound.playPop();
+    setPhotoMode(false);
     setActiveMiniGame(gameId);
     setActiveDrawer('none');
     setScreen('MINIGAME');
@@ -272,27 +303,31 @@ export default function App() {
       {/* MAIN PAPER STAGE & HUD */}
       {(screen === 'PLAYING' || screen === 'MINIGAME') && (
         <>
-          <TopHud
-            activePetId={data.activePetId}
-            petName={activePetName}
-            stickerSrc={stickerMap[data.activePetId]}
-            love={data.love}
-            hunger={data.hunger}
-            coins={data.coins}
-            activeBackgroundId={data.activeBackgroundId}
-            unlockedBackgroundIds={data.unlockedBackgroundIds}
-            dailyCheckIn={data.dailyCheckIn}
-            muted={data.muted}
-            onSelectBackground={selectBackground}
-            onOpenPets={() => handleToggleDrawer(activeDrawer === 'pets' ? 'none' : 'pets')}
-            onOpenCheckIn={() => handleToggleDrawer(activeDrawer === 'checkin' ? 'none' : 'checkin')}
-            onToggleMute={toggleMute}
-            onReturnTitle={() => {
-              sound.playClick();
-              setActiveDrawer('none');
-              setScreen('TITLE_MENU');
-            }}
-          />
+          {!photoMode && (
+            <TopHud
+              activePetId={data.activePetId}
+              petName={activePetName}
+              stickerSrc={stickerMap[data.activePetId]}
+              love={data.love}
+              hunger={data.hunger}
+              coins={data.coins}
+              activeBackgroundId={data.activeBackgroundId}
+              unlockedBackgroundIds={data.unlockedBackgroundIds}
+              dailyCheckIn={data.dailyCheckIn}
+              muted={data.muted}
+              onSelectBackground={selectBackground}
+              onOpenPets={() => handleToggleDrawer(activeDrawer === 'pets' ? 'none' : 'pets')}
+              onOpenCheckIn={() => handleToggleDrawer(activeDrawer === 'checkin' ? 'none' : 'checkin')}
+              onEnterPhotoMode={handleEnterPhotoMode}
+              onToggleMute={toggleMute}
+              onReturnTitle={() => {
+                sound.playClick();
+                setPhotoMode(false);
+                setActiveDrawer('none');
+                setScreen('TITLE_MENU');
+              }}
+            />
+          )}
 
           <PaperStage
             backgroundId={data.activeBackgroundId}
@@ -301,7 +336,8 @@ export default function App() {
             stickerMap={stickerMap}
             outfit={data.outfits[data.activePetId] || {}}
             decorations={currentRoomDecorations}
-            decorateMode={activeDrawer === 'decorate'}
+            decorateMode={activeDrawer === 'decorate' && !photoMode}
+            photoMode={photoMode}
             selectedDecoId={selectedDecoId}
             onSelectDeco={setSelectedDecoId}
             onUpdateDeco={updatePlacedDecoration}
@@ -317,8 +353,42 @@ export default function App() {
             hunger={data.hunger}
           />
 
+          {/* Clean Photo Mode Tap-to-Exit Layer + Auto-Fading Hint */}
+          {photoMode && screen === 'PLAYING' && (
+            <>
+              <div
+                role="button"
+                tabIndex={0}
+                onClick={handleExitPhotoMode}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') handleExitPhotoMode();
+                }}
+                aria-label="Exit Photo Mode and show UI"
+                className="fixed inset-0 z-30 cursor-pointer bg-transparent"
+              />
+              <div
+                className={`fixed bottom-5 left-1/2 -translate-x-1/2 z-40 pointer-events-none paper-card rounded-xl px-4 py-2 flex items-center gap-2 text-xs font-semibold text-[#3D312A] transition-opacity duration-500 ${
+                  showPhotoHint ? 'opacity-95' : 'opacity-0'
+                }`}
+              >
+                <Camera className="w-4 h-4 text-[#2F7D6D] shrink-0" />
+                <span className="whitespace-nowrap">
+                  Photo Mode — click anywhere or press Esc to show UI
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={handleExitPhotoMode}
+                className="fixed top-3 right-3 z-40 paper-card rounded-xl px-3 py-1.5 flex items-center gap-1.5 text-xs font-semibold text-[#3D312A] opacity-0 hover:opacity-100 focus-visible:opacity-100 transition-opacity cursor-pointer"
+              >
+                <X className="w-3.5 h-3.5" />
+                <span>Exit Photo Mode</span>
+              </button>
+            </>
+          )}
+
           {/* Returning Player Decay Notice */}
-          {welcomeNotice && screen === 'PLAYING' && !checkInNotice && (
+          {!photoMode && welcomeNotice && screen === 'PLAYING' && !checkInNotice && (
             <div className="fixed top-20 left-1/2 -translate-x-1/2 z-40 paper-card rounded-xl px-4 py-2.5 flex items-center gap-3 max-w-md w-[92vw]">
               <div className="flex-1 text-xs text-[#3D312A]">
                 <strong>Welcome back!</strong> You were away{' '}
@@ -337,7 +407,7 @@ export default function App() {
           )}
 
           {/* Daily Check-In Streak Toast */}
-          {checkInNotice && screen === 'PLAYING' && (
+          {!photoMode && checkInNotice && screen === 'PLAYING' && (
             <div className="fixed top-20 left-1/2 -translate-x-1/2 z-40 paper-card rounded-xl px-4 py-2.5 flex items-center gap-3 max-w-md w-[92vw] border-[#2F7D6D]">
               <CalendarCheck className="w-4 h-4 text-[#2F7D6D] shrink-0" />
               <div className="flex-1 text-xs text-[#3D312A]">
@@ -372,7 +442,7 @@ export default function App() {
           )}
 
           {/* Contextual Drawers */}
-          {activeDrawer === 'feed' && (
+          {!photoMode && activeDrawer === 'feed' && (
             <FeedTray
               treatCounts={data.treatCounts}
               onFeed={handleFeed}
@@ -483,13 +553,15 @@ export default function App() {
             />
           )}
 
-          <BottomDock
-            activeDrawer={activeDrawer}
-            trickLabel={activePetDef.trickLabel}
-            onGiveLove={handleGiveLove}
-            onPlayTrick={() => triggerTrick(true)}
-            onToggleDrawer={handleToggleDrawer}
-          />
+          {!photoMode && (
+            <BottomDock
+              activeDrawer={activeDrawer}
+              trickLabel={activePetDef.trickLabel}
+              onGiveLove={handleGiveLove}
+              onPlayTrick={() => triggerTrick(true)}
+              onToggleDrawer={handleToggleDrawer}
+            />
+          )}
         </>
       )}
 

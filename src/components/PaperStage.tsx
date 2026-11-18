@@ -20,6 +20,7 @@ interface Props {
   outfit: PetOutfit;
   decorations: PlacedDecoration[];
   decorateMode: boolean;
+  photoMode?: boolean;
   selectedDecoId: string | null;
   onSelectDeco: (id: string | null) => void;
   onUpdateDeco: (id: string, patch: Partial<PlacedDecoration>) => void;
@@ -57,6 +58,7 @@ export const PaperStage: React.FC<Props> = ({
   outfit,
   decorations,
   decorateMode,
+  photoMode = false,
   selectedDecoId,
   onSelectDeco,
   onUpdateDeco,
@@ -265,7 +267,7 @@ export const PaperStage: React.FC<Props> = ({
         }`}
       >
         <div className="relative flex flex-col items-center">
-          {needsCareHint && !decorateMode && (
+          {needsCareHint && !decorateMode && !photoMode && (
             <div className="mb-1 px-2.5 py-0.5 rounded-md bg-[#FBF7F0]/95 border border-[#D6C4AC] text-xs font-medium text-[#6E5D52] shadow-sm whitespace-nowrap">
               {hunger < 35 ? `${petName} is hungry!` : `${petName} misses hugs!`}
             </div>
@@ -277,7 +279,7 @@ export const PaperStage: React.FC<Props> = ({
             sizePx={petSizePx}
             squishing={petSquishing}
             trickActive={petTrickActive}
-            onClick={decorateMode ? undefined : onPetTap}
+            onClick={decorateMode || photoMode ? undefined : onPetTap}
           />
         </div>
       </div>

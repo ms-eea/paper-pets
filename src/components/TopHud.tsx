@@ -1,5 +1,16 @@
 import React from 'react';
-import { CalendarCheck, Coins, Heart, Home, MapPin, PawPrint, Utensils, Volume2, VolumeX } from 'lucide-react';
+import {
+  CalendarCheck,
+  Camera,
+  Coins,
+  Heart,
+  Home,
+  MapPin,
+  PawPrint,
+  Utensils,
+  Volume2,
+  VolumeX,
+} from 'lucide-react';
 import { BACKGROUND_CATALOG, getLocalDateKey, getPreviousDateKey, PET_BY_ID } from '../data/catalog';
 import { BackgroundId, DailyCheckInState, PetId } from '../types/game';
 
@@ -17,6 +28,7 @@ interface Props {
   onSelectBackground: (id: BackgroundId) => void;
   onOpenPets: () => void;
   onOpenCheckIn: () => void;
+  onEnterPhotoMode: () => void;
   onToggleMute: () => void;
   onReturnTitle: () => void;
 }
@@ -42,6 +54,7 @@ export const TopHud: React.FC<Props> = ({
   onSelectBackground,
   onOpenPets,
   onOpenCheckIn,
+  onEnterPhotoMode,
   onToggleMute,
   onReturnTitle,
 }) => {
@@ -171,6 +184,18 @@ export const TopHud: React.FC<Props> = ({
           <span className="font-mono-num text-sm font-semibold text-[#3D312A]">{coins}</span>
           <span className="text-xs text-[#6E5D52] hidden sm:inline">Coins</span>
         </div>
+
+        {/* Photo Mode Button */}
+        <button
+          type="button"
+          onClick={onEnterPhotoMode}
+          aria-label="Photo Mode"
+          title="Photo Mode — hide UI for a clean screenshot"
+          className="paper-card rounded-xl px-3 py-2 flex items-center gap-1.5 text-xs font-semibold text-[#3D312A] hover:bg-[#F3EBDD] transition-colors cursor-pointer whitespace-nowrap shrink-0"
+        >
+          <Camera className="w-4 h-4 text-[#2F7D6D] shrink-0" />
+          <span>Photo Mode</span>
+        </button>
 
         {/* Audio Mute & Menu Buttons */}
         <div className="paper-card rounded-xl p-1 flex items-center gap-1">
