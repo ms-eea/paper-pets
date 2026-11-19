@@ -149,10 +149,24 @@ export const TopHud: React.FC<Props> = ({
             aria-label="Choose background room"
             className="bg-transparent text-xs font-semibold text-[#3D312A] focus:outline-none cursor-pointer pr-1"
           >
-            {BACKGROUND_CATALOG.filter((b) => unlockedBackgroundIds.includes(b.id)).map((bg) => (
-              <option key={bg.id} value={bg.id}>
-                {bg.name}
-              </option>
+            {Array.from(
+              BACKGROUND_CATALOG.filter((b) => unlockedBackgroundIds.includes(b.id)).reduce(
+                (acc, bg) => {
+                  const list = acc.get(bg.subcategory) || [];
+                  list.push(bg);
+                  acc.set(bg.subcategory, list);
+                  return acc;
+                },
+                new Map<string, typeof BACKGROUND_CATALOG>(),
+              ),
+            ).map(([groupLabel, bgs]) => (
+              <optgroup key={groupLabel} label={groupLabel}>
+                {bgs.map((bg) => (
+                  <option key={bg.id} value={bg.id}>
+                    {bg.name}
+                  </option>
+                ))}
+              </optgroup>
             ))}
           </select>
         </label>
