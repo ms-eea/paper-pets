@@ -173,18 +173,18 @@ export const ColorShapeSortGame: React.FC<Props> = ({ onComplete, onExit }) => {
   const activeHex = BINS.find((b) => b.color === activeToken?.color)?.hex || '#D95D39';
 
   return (
-    <div className="fixed inset-0 z-50 bg-[#3D312A]/60 flex items-center justify-center p-4">
-      <div className="relative w-full max-w-xl paper-card rounded-2xl overflow-hidden">
-        <div className="px-4 py-3 bg-[#F3EBDD] border-b border-[#D6C4AC] flex items-center justify-between gap-3">
-          <div>
-            <h3 className="font-display text-lg font-bold text-[#3D312A]">
-              Color & Shape Sorting
+    <div className="fixed inset-0 z-50 bg-[#3D312A]/60 flex items-center justify-center p-2.5 sm:p-4">
+      <div className="relative w-full max-w-xl max-h-[94dvh] overflow-y-auto overscroll-contain craft-scroll paper-card rounded-2xl">
+        <div className="px-3.5 sm:px-4 py-2.5 sm:py-3 bg-[#F3EBDD] border-b border-[#D6C4AC] flex flex-wrap items-center justify-between gap-2 sm:gap-3">
+          <div className="min-w-0">
+            <h3 className="font-display text-base sm:text-lg font-bold text-[#3D312A]">
+              Color &amp; Shape Sorting
             </h3>
-            <p className="text-xs text-[#6E5D52]">
-              Click a tray or press keys 1–4 · Watch when the sorting rule flips!
+            <p className="text-[11px] sm:text-xs text-[#6E5D52]">
+              Tap a tray or press keys 1–4 · Watch when the rule flips!
             </p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 shrink-0">
             <span className="font-mono-num text-xs font-bold text-[#3D312A] bg-[#FBF7F0] px-2.5 py-1 rounded border border-[#D6C4AC]">
               {timeLeft}s
             </span>
@@ -196,14 +196,14 @@ export const ColorShapeSortGame: React.FC<Props> = ({ onComplete, onExit }) => {
               type="button"
               onClick={onExit}
               aria-label="Close sorting game"
-              className="w-8 h-8 rounded-lg hover:bg-[#E8DCC8] flex items-center justify-center text-[#3D312A]"
+              className="w-10 h-10 sm:w-8 sm:h-8 rounded-lg hover:bg-[#E8DCC8] flex items-center justify-center text-[#3D312A] cursor-pointer"
             >
               <X className="w-4 h-4" />
             </button>
           </div>
         </div>
 
-        <div className="p-5 sm:p-6 bg-[#FBF7F0] space-y-5">
+        <div className="p-4 sm:p-6 bg-[#FBF7F0] space-y-4 sm:space-y-5">
           {/* Active Rule Banner */}
           <div className="flex items-center justify-between paper-card-kraft rounded-xl px-4 py-2.5">
             <div className="text-sm font-bold text-[#3D312A]">
@@ -262,13 +262,15 @@ export const ColorShapeSortGame: React.FC<Props> = ({ onComplete, onExit }) => {
                 key={bin.color}
                 type="button"
                 onClick={() => handleSort(idx)}
-                className="p-3 rounded-xl bg-[#F3EBDD] hover:bg-[#E8DCC8] active:scale-95 border-2 border-[#CEB99C] flex flex-col items-center gap-1.5 cursor-pointer transition-transform"
+                className="min-h-[76px] p-3 rounded-xl bg-[#F3EBDD] hover:bg-[#E8DCC8] active:scale-95 border-2 border-[#CEB99C] flex flex-col items-center justify-center gap-1.5 cursor-pointer transition-transform"
               >
                 <TokenShapeSvg shape={bin.shape} fill={bin.hex} size={38} />
                 <span className="text-xs font-bold text-[#3D312A] whitespace-nowrap">
                   {bin.label}
                 </span>
-                <span className="font-mono-num text-[10px] text-[#6E5D52]">Key {idx + 1}</span>
+                <span className="font-mono-num text-[10px] text-[#6E5D52] hidden sm:inline">
+                  Key {idx + 1}
+                </span>
               </button>
             ))}
           </div>

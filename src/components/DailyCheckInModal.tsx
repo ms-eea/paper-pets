@@ -53,11 +53,11 @@ export const DailyCheckInModal: React.FC<Props> = ({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#3D312A]/45"
+      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-[#3D312A]/45"
       onClick={onClose}
     >
       <div
-        className="relative w-full max-w-2xl paper-card rounded-2xl p-6 sm:p-8 max-h-[92vh] overflow-y-auto craft-scroll"
+        className="relative w-full max-w-2xl paper-card rounded-2xl p-4 sm:p-8 max-h-[92dvh] overflow-y-auto overscroll-contain craft-scroll"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="washi-tape w-24 h-4 -rotate-2 absolute -top-2 left-10 rounded-sm" />
@@ -67,7 +67,7 @@ export const DailyCheckInModal: React.FC<Props> = ({
           type="button"
           onClick={onClose}
           aria-label="Close daily check-in"
-          className="absolute top-4 right-4 w-9 h-9 rounded-lg hover:bg-[#E8DCC8] flex items-center justify-center text-[#3D312A] cursor-pointer"
+          className="absolute top-3 right-3 sm:top-4 sm:right-4 w-10 h-10 rounded-lg hover:bg-[#E8DCC8] flex items-center justify-center text-[#3D312A] cursor-pointer"
         >
           <X className="w-5 h-5" />
         </button>
@@ -206,7 +206,7 @@ export const DailyCheckInModal: React.FC<Props> = ({
             <button
               type="button"
               onClick={onClose}
-              className="px-5 py-3 rounded-xl bg-[#2F7D6D] hover:bg-[#256659] text-[#FFFDF8] font-bold text-sm shadow-[0_3px_0_#1C4D43] cursor-pointer whitespace-nowrap shrink-0 flex items-center justify-center gap-2"
+              className="w-full sm:w-auto min-h-[48px] px-5 py-3 rounded-xl bg-[#2F7D6D] hover:bg-[#256659] text-[#FFFDF8] font-bold text-sm shadow-[0_3px_0_#1C4D43] cursor-pointer whitespace-nowrap shrink-0 flex items-center justify-center gap-2"
             >
               <Check className="w-4 h-4" />
               <span>Checked In Today</span>
@@ -215,7 +215,7 @@ export const DailyCheckInModal: React.FC<Props> = ({
             <button
               type="button"
               onClick={onClaim}
-              className="px-5 py-3 rounded-xl bg-[#D95D39] hover:bg-[#C54E2B] text-[#FFFDF8] font-bold text-sm shadow-[0_3px_0_#9E3A1D] cursor-pointer whitespace-nowrap shrink-0 flex items-center justify-center gap-2"
+              className="w-full sm:w-auto min-h-[48px] px-5 py-3 rounded-xl bg-[#D95D39] hover:bg-[#C54E2B] text-[#FFFDF8] font-bold text-sm shadow-[0_3px_0_#9E3A1D] cursor-pointer whitespace-nowrap shrink-0 flex items-center justify-center gap-2"
             >
               <Sparkles className="w-4 h-4" />
               <span>Check In &amp; Claim +{todayRewardCoins}</span>

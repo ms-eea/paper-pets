@@ -40,8 +40,9 @@ const GAMES: {
 
 export const MiniGamesDrawer: React.FC<Props> = ({ highScores, onLaunchGame, onClose }) => {
   return (
-    <aside className="fixed right-3 sm:right-5 top-24 bottom-24 z-30 w-[320px] sm:w-[368px] paper-card rounded-2xl flex flex-col overflow-hidden">
-      <div className="px-4 py-3 border-b border-[#D6C4AC] bg-[#F3EBDD] flex items-center justify-between">
+    <aside className="fixed inset-x-0 bottom-[calc(60px+env(safe-area-inset-bottom))] sm:bottom-20 md:inset-x-auto md:right-5 md:top-24 md:bottom-24 z-30 h-[48dvh] max-h-[54dvh] md:h-auto md:max-h-none md:w-[368px] paper-card rounded-t-2xl md:rounded-2xl flex flex-col overflow-hidden">
+      <div className="md:hidden w-10 h-1 rounded-full bg-[#CEB99C] mx-auto mt-2 mb-0.5 shrink-0" />
+      <div className="px-4 py-2.5 md:py-3 border-b border-[#D6C4AC] bg-[#F3EBDD] flex items-center justify-between">
         <div>
           <h3 className="font-display text-lg font-bold text-[#3D312A]">Mini-Game Table</h3>
           <p className="text-xs text-[#6E5D52]">Play quick games to earn Craft Coins</p>
@@ -50,17 +51,17 @@ export const MiniGamesDrawer: React.FC<Props> = ({ highScores, onLaunchGame, onC
           type="button"
           onClick={onClose}
           aria-label="Close mini-games"
-          className="w-8 h-8 rounded-lg hover:bg-[#E8DCC8] flex items-center justify-center text-[#3D312A]"
+          className="w-10 h-10 md:w-8 md:h-8 rounded-lg hover:bg-[#E8DCC8] flex items-center justify-center text-[#3D312A] cursor-pointer"
         >
           <X className="w-4 h-4" />
         </button>
       </div>
 
-      <div className="flex-1 overflow-y-auto craft-scroll p-4 space-y-3">
+      <div className="flex-1 overflow-y-auto overscroll-contain craft-scroll p-3.5 md:p-4 space-y-3">
         {GAMES.map((g) => (
           <div
             key={g.id}
-            className="p-4 rounded-xl bg-[#FBF7F0] border border-[#D6C4AC] space-y-2.5"
+            className="p-3.5 md:p-4 rounded-xl bg-[#FBF7F0] border border-[#D6C4AC] space-y-2.5"
           >
             <div className="flex items-start justify-between gap-2">
               <div className="flex items-center gap-2">
@@ -88,7 +89,7 @@ export const MiniGamesDrawer: React.FC<Props> = ({ highScores, onLaunchGame, onC
             <button
               type="button"
               onClick={() => onLaunchGame(g.id)}
-              className="w-full py-2 px-4 rounded-xl bg-[#2F7D6D] hover:bg-[#256659] text-white text-xs font-bold shadow-[0_2px_0_#1C4D43] cursor-pointer transition-colors"
+              className="w-full min-h-[44px] py-2 px-4 rounded-xl bg-[#2F7D6D] hover:bg-[#256659] text-white text-xs font-bold shadow-[0_2px_0_#1C4D43] cursor-pointer transition-colors"
             >
               Play {g.title}
             </button>

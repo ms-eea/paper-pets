@@ -148,6 +148,17 @@ export interface PlacedDecoration {
   flipped?: boolean;
 }
 
+export type TimeOfDay = 'day' | 'night';
+
+export interface SavedRoomLayoutSlot {
+  id: string;
+  name: string;
+  backgroundId: BackgroundId;
+  timeOfDay?: TimeOfDay;
+  decorations: PlacedDecoration[];
+  savedAt: number;
+}
+
 export interface DailyCheckInState {
   streak: number;
   bestStreak: number;
@@ -165,7 +176,9 @@ export interface PaperPetsSaveData {
   love: number;
   hunger: number;
   lastSavedAt: number;
+  lastRoomSaveAt: number;
   activeBackgroundId: BackgroundId;
+  roomTimeOfDay: Record<BackgroundId, TimeOfDay>;
   outfits: Record<PetId, PetOutfit>;
   unlockedClothingIds: string[];
   unlockedPatternIds: PatternId[];
@@ -173,6 +186,7 @@ export interface PaperPetsSaveData {
   unlockedBackgroundIds: BackgroundId[];
   treatCounts: Record<string, number>;
   roomDecorations: Record<BackgroundId, PlacedDecoration[]>;
+  savedRoomSlots: SavedRoomLayoutSlot[];
   highScores: Record<MiniGameId, number>;
   dailyCheckIn: DailyCheckInState;
   muted: boolean;

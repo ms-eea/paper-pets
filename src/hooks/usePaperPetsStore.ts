@@ -4,6 +4,8 @@ import {
   CLOTHING_CATALOG,
   createInitialSaveData,
   DECORATION_CATALOG,
+  DEFAULT_ROOM_DECORATIONS,
+  DEFAULT_ROOM_TIME_OF_DAY,
   getDailyRewardForStreak,
   getLocalDateKey,
   getPreviousDateKey,
@@ -21,6 +23,8 @@ import {
   PatternId,
   PetId,
   PlacedDecoration,
+  SavedRoomLayoutSlot,
+  TimeOfDay,
 } from '../types/game';
 import { sound } from '../utils/sound';
 
@@ -89,13 +93,39 @@ function loadAndNormalizeSave(): { save: PaperPetsSaveData; awaySummary: AwaySum
       hydratedCheckIn.streak = 0;
     }
 
+    const rawRoomDecorations = {
+      ...initial.roomDecorations,
+      ...(parsed.roomDecorations || {}),
+    };
+
+    // Unstick legacy Outdoor Meadow starter bunting (init_m_2) and keep starter sky props clear of TopHud
+    if (Array.isArray(rawRoomDecorations.meadow)) {
+      rawRoomDecorations.meadow = rawRoomDecorations.meadow
+        .filter((d) => !(d.instanceId === 'init_m_2' && d.itemId === 'deco_bunting'))
+        .map((d) => {
+          if (d.instanceId === 'init_m_sun' && d.y < 24) {
+            return { ...d, x: Math.max(20, d.x), y: 26 };
+          }
+          if (d.instanceId === 'init_m_cloud' && d.y < 23) {
+            return { ...d, y: 24 };
+          }
+          return d;
+        });
+    }
+
     const merged: PaperPetsSaveData = {
       ...initial,
       ...parsed,
       petNames: { ...initial.petNames, ...(parsed.petNames || {}) },
       outfits: { ...initial.outfits, ...(parsed.outfits || {}) },
       treatCounts: { ...initial.treatCounts, ...(parsed.treatCounts || {}) },
-      roomDecorations: { ...initial.roomDecorations, ...(parsed.roomDecorations || {}) },
+      roomDecorations: rawRoomDecorations,
+      roomTimeOfDay: {
+        ...DEFAULT_ROOM_TIME_OF_DAY,
+        ...(parsed.roomTimeOfDay || {}),
+      },
+      savedRoomSlots: Array.isArray(parsed.savedRoomSlots) ? parsed.savedRoomSlots : [],
+      lastRoomSaveAt: parsed.lastRoomSaveAt || parsed.lastSavedAt || initial.lastRoomSaveAt,
       highScores: { ...initial.highScores, ...(parsed.highScores || {}) },
       dailyCheckIn: hydratedCheckIn,
       unlockedClothingIds: Array.from(
@@ -144,6 +174,7 @@ export function usePaperPetsStore(pauseDecay: boolean) {
   const [data, setData] = useState<PaperPetsSaveData>(save);
   const [welcomeNotice, setWelcomeNotice] = useState<AwaySummary | null>(awaySummary);
   const [checkInNotice, setCheckInNotice] = useState<CheckInRewardNotice | null>(null);
+  const [hasUnsavedRoomChanges, setHasUnsavedRoomChanges] = useState<boolean>(false);
 
   // Keep sound mute synced
   useEffect(() => {
@@ -262,6 +293,17 @@ export function usePaperPetsStore(pauseDecay: boolean) {
     });
   }, []);
 
+  const setRoomTimeOfDay = useCallback((bgId: BackgroundId, time: TimeOfDay) => {
+    sound.playClick();
+    setData((prev) => ({
+      ...prev,
+      roomTimeOfDay: {
+        ...prev.roomTimeOfDay,
+        [bgId]: time,
+      },
+    }));
+  }, []);
+
   const giveLove = useCallback((): CheckInRewardNotice | null => {
     sound.playLove();
     const grant = notifyGrantIfNewDay(150);
@@ -362,6 +404,7 @@ export function usePaperPetsStore(pauseDecay: boolean) {
     const def = DECORATION_CATALOG.find((d) => d.id === itemId);
     const id = `dec_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
     sound.playPop();
+    setHasUnsavedRoomChanges(true);
     setData((prev) => {
       const bgId = prev.activeBackgroundId;
       const list = prev.roomDecorations[bgId] || [];
@@ -388,6 +431,7 @@ export function usePaperPetsStore(pauseDecay: boolean) {
 
   const updatePlacedDecoration = useCallback(
     (instanceId: string, patch: Partial<PlacedDecoration>) => {
+      setHasUnsavedRoomChanges(true);
       setData((prev) => {
         const bgId = prev.activeBackgroundId;
         const list = prev.roomDecorations[bgId] || [];
@@ -407,6 +451,7 @@ export function usePaperPetsStore(pauseDecay: boolean) {
 
   const removePlacedDecoration = useCallback((instanceId: string) => {
     sound.playClick();
+    setHasUnsavedRoomChanges(true);
     setData((prev) => {
       const bgId = prev.activeBackgroundId;
       const list = prev.roomDecorations[bgId] || [];
@@ -415,6 +460,26 @@ export function usePaperPetsStore(pauseDecay: boolean) {
         roomDecorations: {
           ...prev.roomDecorations,
           [bgId]: list.filter((item) => item.instanceId !== instanceId),
+        },
+      };
+    });
+  }, []);
+
+  const resetActiveRoom = useCallback(() => {
+    sound.playPop();
+    setHasUnsavedRoomChanges(true);
+    setData((prev) => {
+      const bgId = prev.activeBackgroundId;
+      const defaults = (DEFAULT_ROOM_DECORATIONS[bgId] || []).map((item) => ({ ...item }));
+      return {
+        ...prev,
+        roomTimeOfDay: {
+          ...prev.roomTimeOfDay,
+          [bgId]: DEFAULT_ROOM_TIME_OF_DAY[bgId],
+        },
+        roomDecorations: {
+          ...prev.roomDecorations,
+          [bgId]: defaults,
         },
       };
     });
@@ -516,6 +581,7 @@ export function usePaperPetsStore(pauseDecay: boolean) {
       } else {
         sound.playPop();
       }
+      setHasUnsavedRoomChanges(true);
 
       setData((prev) => {
         const bgId = prev.activeBackgroundId;
@@ -632,6 +698,143 @@ export function usePaperPetsStore(pauseDecay: boolean) {
     [notifyGrantIfNewDay],
   );
 
+  const saveRoomNow = useCallback((): number => {
+    const now = Date.now();
+    sound.playSuccess();
+    setHasUnsavedRoomChanges(false);
+    setData((prev) => {
+      const next: PaperPetsSaveData = {
+        ...prev,
+        lastSavedAt: now,
+        lastRoomSaveAt: now,
+      };
+      try {
+        localStorage.setItem(SAVE_STORAGE_KEY, JSON.stringify(next));
+      } catch {
+        // Ignore storage quota errors
+      }
+      return next;
+    });
+    return now;
+  }, []);
+
+  const saveRoomLayoutSlot = useCallback(
+    (customName?: string): SavedRoomLayoutSlot => {
+      const now = Date.now();
+      const bgName =
+        BACKGROUND_CATALOG.find((b) => b.id === data.activeBackgroundId)?.name || 'Room';
+      const sameRoomCount =
+        data.savedRoomSlots.filter((s) => s.backgroundId === data.activeBackgroundId).length + 1;
+      const slotName = customName?.trim()
+        ? customName.trim().slice(0, 32)
+        : `${bgName} #${sameRoomCount}`;
+
+      const snapshot: SavedRoomLayoutSlot = {
+        id: `slot_${now}_${Math.random().toString(36).slice(2, 6)}`,
+        name: slotName,
+        backgroundId: data.activeBackgroundId,
+        timeOfDay: data.roomTimeOfDay[data.activeBackgroundId],
+        decorations: structuredClone(data.roomDecorations[data.activeBackgroundId] || []),
+        savedAt: now,
+      };
+
+      sound.playSuccess();
+      setHasUnsavedRoomChanges(false);
+      setData((prev) => {
+        const next: PaperPetsSaveData = {
+          ...prev,
+          lastSavedAt: now,
+          lastRoomSaveAt: now,
+          savedRoomSlots: [snapshot, ...prev.savedRoomSlots].slice(0, 18),
+        };
+        try {
+          localStorage.setItem(SAVE_STORAGE_KEY, JSON.stringify(next));
+        } catch {
+          // Ignore storage quota errors
+        }
+        return next;
+      });
+      return snapshot;
+    },
+    [data.activeBackgroundId, data.roomDecorations, data.roomTimeOfDay, data.savedRoomSlots],
+  );
+
+  const loadRoomLayoutSlot = useCallback(
+    (slotId: string): boolean => {
+      const slot = data.savedRoomSlots.find((s) => s.id === slotId);
+      if (!slot) return false;
+      sound.playPop();
+      setHasUnsavedRoomChanges(false);
+      setData((prev) => {
+        const targetBgId = prev.unlockedBackgroundIds.includes(slot.backgroundId)
+          ? slot.backgroundId
+          : prev.activeBackgroundId;
+        const cloned = structuredClone(slot.decorations);
+        const now = Date.now();
+        const next: PaperPetsSaveData = {
+          ...prev,
+          activeBackgroundId: targetBgId,
+          lastSavedAt: now,
+          lastRoomSaveAt: now,
+          roomTimeOfDay: slot.timeOfDay
+            ? { ...prev.roomTimeOfDay, [targetBgId]: slot.timeOfDay }
+            : prev.roomTimeOfDay,
+          roomDecorations: {
+            ...prev.roomDecorations,
+            [targetBgId]: cloned,
+          },
+        };
+        try {
+          localStorage.setItem(SAVE_STORAGE_KEY, JSON.stringify(next));
+        } catch {
+          // Ignore storage quota errors
+        }
+        return next;
+      });
+      return true;
+    },
+    [data.savedRoomSlots],
+  );
+
+  const overwriteRoomLayoutSlot = useCallback((slotId: string) => {
+    const now = Date.now();
+    sound.playSuccess();
+    setHasUnsavedRoomChanges(false);
+    setData((prev) => {
+      const cloned = structuredClone(prev.roomDecorations[prev.activeBackgroundId] || []);
+      const next: PaperPetsSaveData = {
+        ...prev,
+        lastSavedAt: now,
+        lastRoomSaveAt: now,
+        savedRoomSlots: prev.savedRoomSlots.map((slot) =>
+          slot.id === slotId
+            ? {
+                ...slot,
+                backgroundId: prev.activeBackgroundId,
+                timeOfDay: prev.roomTimeOfDay[prev.activeBackgroundId],
+                decorations: cloned,
+                savedAt: now,
+              }
+            : slot,
+        ),
+      };
+      try {
+        localStorage.setItem(SAVE_STORAGE_KEY, JSON.stringify(next));
+      } catch {
+        // Ignore storage quota errors
+      }
+      return next;
+    });
+  }, []);
+
+  const deleteRoomLayoutSlot = useCallback((slotId: string) => {
+    sound.playClick();
+    setData((prev) => ({
+      ...prev,
+      savedRoomSlots: prev.savedRoomSlots.filter((s) => s.id !== slotId),
+    }));
+  }, []);
+
   const toggleMute = useCallback(() => {
     setData((prev) => ({
       ...prev,
@@ -643,6 +846,7 @@ export function usePaperPetsStore(pauseDecay: boolean) {
     data,
     welcomeNotice,
     checkInNotice,
+    hasUnsavedRoomChanges,
     dismissWelcomeNotice,
     dismissCheckInNotice,
     recordPetInteraction,
@@ -651,6 +855,7 @@ export function usePaperPetsStore(pauseDecay: boolean) {
     selectPet,
     renamePet,
     selectBackground,
+    setRoomTimeOfDay,
     giveLove,
     feedPet,
     equipGarment,
@@ -658,6 +863,12 @@ export function usePaperPetsStore(pauseDecay: boolean) {
     addPlacedDecoration,
     updatePlacedDecoration,
     removePlacedDecoration,
+    resetActiveRoom,
+    saveRoomNow,
+    saveRoomLayoutSlot,
+    loadRoomLayoutSlot,
+    overwriteRoomLayoutSlot,
+    deleteRoomLayoutSlot,
     buyShopItem,
     buyAndPlaceDecoration,
     buyAndEquipClothing,

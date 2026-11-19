@@ -125,16 +125,18 @@ export const StickerMemoryGame: React.FC<Props> = ({ stickerMap, onComplete, onE
   const matchedPairs = cards.filter((c) => c.matched).length / 2;
 
   return (
-    <div className="fixed inset-0 z-50 bg-[#3D312A]/60 flex items-center justify-center p-4">
-      <div className="relative w-full max-w-xl paper-card rounded-2xl overflow-hidden">
-        <div className="px-4 py-3 bg-[#F3EBDD] border-b border-[#D6C4AC] flex items-center justify-between gap-3">
-          <div>
-            <h3 className="font-display text-lg font-bold text-[#3D312A]">Sticker Memory Match</h3>
-            <p className="text-xs text-[#6E5D52]">
+    <div className="fixed inset-0 z-50 bg-[#3D312A]/60 flex items-center justify-center p-2.5 sm:p-4">
+      <div className="relative w-full max-w-xl max-h-[94dvh] overflow-y-auto overscroll-contain craft-scroll paper-card rounded-2xl">
+        <div className="px-3.5 sm:px-4 py-2.5 sm:py-3 bg-[#F3EBDD] border-b border-[#D6C4AC] flex flex-wrap items-center justify-between gap-2 sm:gap-3">
+          <div className="min-w-0">
+            <h3 className="font-display text-base sm:text-lg font-bold text-[#3D312A]">
+              Sticker Memory Match
+            </h3>
+            <p className="text-[11px] sm:text-xs text-[#6E5D52]">
               Match all 8 sticker pairs · Fewer moves earn bonus coins
             </p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 shrink-0">
             <span className="font-mono-num text-xs font-bold text-[#3D312A] bg-[#FBF7F0] px-2.5 py-1 rounded border border-[#D6C4AC]">
               {matchedPairs}/8 Pairs
             </span>
@@ -145,15 +147,15 @@ export const StickerMemoryGame: React.FC<Props> = ({ stickerMap, onComplete, onE
               type="button"
               onClick={onExit}
               aria-label="Close memory game"
-              className="w-8 h-8 rounded-lg hover:bg-[#E8DCC8] flex items-center justify-center text-[#3D312A]"
+              className="w-10 h-10 sm:w-8 sm:h-8 rounded-lg hover:bg-[#E8DCC8] flex items-center justify-center text-[#3D312A] cursor-pointer"
             >
               <X className="w-4 h-4" />
             </button>
           </div>
         </div>
 
-        <div className="p-4 sm:p-6 bg-[#FBF7F0]">
-          <div className="grid grid-cols-4 gap-2.5 sm:gap-3">
+        <div className="p-3 sm:p-6 bg-[#FBF7F0]">
+          <div className="grid grid-cols-4 gap-2 sm:gap-3">
             {cards.map((card) => {
               const revealed = card.flipped || card.matched;
               const pet = card.petId ? PET_CATALOG.find((p) => p.id === card.petId) : null;
@@ -162,7 +164,7 @@ export const StickerMemoryGame: React.FC<Props> = ({ stickerMap, onComplete, onE
                   key={card.uid}
                   type="button"
                   onClick={() => handleCardClick(card.uid)}
-                  className={`aspect-square rounded-xl border-2 flex flex-col items-center justify-center p-2 transition-transform duration-150 cursor-pointer ${
+                  className={`aspect-square rounded-xl border-2 flex flex-col items-center justify-center p-1.5 sm:p-2 transition-transform duration-150 cursor-pointer ${
                     card.matched
                       ? 'bg-[#E6F3EE] border-[#2F7D6D]'
                       : revealed
@@ -172,7 +174,7 @@ export const StickerMemoryGame: React.FC<Props> = ({ stickerMap, onComplete, onE
                 >
                   {revealed ? (
                     <>
-                      <div className="w-12 h-12 sm:w-14 sm:h-14 flex items-center justify-center">
+                      <div className="w-10 h-10 sm:w-14 sm:h-14 flex items-center justify-center">
                         {pet ? (
                           <img
                             src={stickerMap[pet.id] || pet.rawAsset}

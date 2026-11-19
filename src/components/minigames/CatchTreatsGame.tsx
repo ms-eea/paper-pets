@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Coins, Heart, Pause, Play, RotateCcw, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Coins, Heart, Pause, Play, RotateCcw, X } from 'lucide-react';
 import { PET_BY_ID } from '../../data/catalog';
 import { PetId } from '../../types/game';
 import { sound } from '../../utils/sound';
@@ -43,6 +43,7 @@ export const CatchTreatsGame: React.FC<Props> = ({
   onExit,
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const touchSteerRef = useRef<-1 | 0 | 1>(0);
   const [phase, setPhase] = useState<'PLAYING' | 'PAUSED' | 'SUMMARY'>('PLAYING');
   const [hudState, setHudState] = useState({ score: 0, coins: 0, lives: 3, timeLeft: 40 });
   const [runId, setRunId] = useState(0);
@@ -64,6 +65,7 @@ export const CatchTreatsGame: React.FC<Props> = ({
 
     const heldKeys = new Set<string>();
     let pointerTargetX: number | null = null;
+    let activePointerId: number | null = null;
     let playerX = W / 2;
     const playerY = H - 62;
     const playerW = 86;
@@ -93,18 +95,36 @@ export const CatchTreatsGame: React.FC<Props> = ({
       heldKeys.add(e.key.toLowerCase());
     };
     const onKeyUp = (e: KeyboardEvent) => heldKeys.delete(e.key.toLowerCase());
-    const onBlur = () => heldKeys.clear();
+    const onBlur = () => {
+      heldKeys.clear();
+      touchSteerRef.current = 0;
+      activePointerId = null;
+    };
 
     const updatePointer = (clientX: number) => {
       const rect = canvas.getBoundingClientRect();
+      if (rect.width <= 0) return;
       const relX = ((clientX - rect.left) / rect.width) * W;
       pointerTargetX = Math.min(W - 46, Math.max(46, relX));
     };
 
-    const onPointerDown = (e: PointerEvent) => updatePointer(e.clientX);
+    const onPointerDown = (e: PointerEvent) => {
+      activePointerId = e.pointerId;
+      try {
+        canvas.setPointerCapture(e.pointerId);
+      } catch {
+        // Ignore if pointer capture is unsupported
+      }
+      updatePointer(e.clientX);
+    };
     const onPointerMove = (e: PointerEvent) => {
-      if (e.buttons > 0 || e.pointerType === 'mouse') {
+      if (activePointerId === e.pointerId || (e.pointerType === 'mouse' && e.buttons > 0)) {
         updatePointer(e.clientX);
+      }
+    };
+    const onPointerUp = (e: PointerEvent) => {
+      if (activePointerId === e.pointerId) {
+        activePointerId = null;
       }
     };
 
@@ -113,6 +133,8 @@ export const CatchTreatsGame: React.FC<Props> = ({
     window.addEventListener('blur', onBlur);
     canvas.addEventListener('pointerdown', onPointerDown);
     canvas.addEventListener('pointermove', onPointerMove);
+    canvas.addEventListener('pointerup', onPointerUp);
+    canvas.addEventListener('pointercancel', onPointerUp);
 
     let lastTime = performance.now();
     let hudSyncAccum = 0;
@@ -218,9 +240,11 @@ export const CatchTreatsGame: React.FC<Props> = ({
           }
         }
 
-        // Player movement
-        const moveLeft = heldKeys.has('arrowleft') || heldKeys.has('a');
-        const moveRight = heldKeys.has('arrowright') || heldKeys.has('d');
+        // Player movement (keyboard, mobile thumb pads, or touch/mouse drag)
+        const moveLeft =
+          heldKeys.has('arrowleft') || heldKeys.has('a') || touchSteerRef.current === -1;
+        const moveRight =
+          heldKeys.has('arrowright') || heldKeys.has('d') || touchSteerRef.current === 1;
         const speed = 430;
         if (moveLeft) {
           playerX -= speed * dt;
@@ -231,7 +255,7 @@ export const CatchTreatsGame: React.FC<Props> = ({
           pointerTargetX = null;
         }
         if (pointerTargetX !== null && !moveLeft && !moveRight) {
-          playerX += (pointerTargetX - playerX) * Math.min(1, dt * 14);
+          playerX += (pointerTargetX - playerX) * Math.min(1, dt * 16);
         }
         playerX = Math.min(W - 46, Math.max(46, playerX));
 
@@ -384,6 +408,8 @@ export const CatchTreatsGame: React.FC<Props> = ({
       window.removeEventListener('blur', onBlur);
       canvas.removeEventListener('pointerdown', onPointerDown);
       canvas.removeEventListener('pointermove', onPointerMove);
+      canvas.removeEventListener('pointerup', onPointerUp);
+      canvas.removeEventListener('pointercancel', onPointerUp);
     };
   }, [petId, stickerSrc, runId, onComplete]);
 
@@ -394,20 +420,20 @@ export const CatchTreatsGame: React.FC<Props> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-[#3D312A]/60 flex items-center justify-center p-4">
-      <div className="relative w-full max-w-3xl paper-card rounded-2xl overflow-hidden">
+    <div className="fixed inset-0 z-50 bg-[#3D312A]/60 flex items-center justify-center p-2.5 sm:p-4">
+      <div className="relative w-full max-w-3xl max-h-[94dvh] paper-card rounded-2xl overflow-hidden flex flex-col">
         {/* Top Game HUD */}
-        <div className="px-4 py-3 bg-[#F3EBDD] border-b border-[#D6C4AC] flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <h3 className="font-display text-lg font-bold text-[#3D312A]">
+        <div className="px-3.5 sm:px-4 py-2.5 sm:py-3 bg-[#F3EBDD] border-b border-[#D6C4AC] flex flex-wrap items-center justify-between gap-2 sm:gap-3 shrink-0">
+          <div className="min-w-0">
+            <h3 className="font-display text-base sm:text-lg font-bold text-[#3D312A] truncate">
               Catch the Treats · {petName}
             </h3>
-            <p className="text-xs text-[#6E5D52]">
-              Move with A/D, Arrow keys, or pointer drag · Dodge muddy boots
+            <p className="text-[11px] sm:text-xs text-[#6E5D52]">
+              Drag anywhere, tap Left/Right, or use A/D · Dodge muddy boots
             </p>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
             <div className="flex items-center gap-1">
               {[0, 1, 2].map((i) => (
                 <Heart
@@ -432,7 +458,7 @@ export const CatchTreatsGame: React.FC<Props> = ({
                 type="button"
                 onClick={() => setPhase((p) => (p === 'PAUSED' ? 'PLAYING' : 'PAUSED'))}
                 aria-label={phase === 'PAUSED' ? 'Resume game' : 'Pause game'}
-                className="w-8 h-8 rounded-lg hover:bg-[#E8DCC8] flex items-center justify-center text-[#3D312A]"
+                className="w-10 h-10 sm:w-8 sm:h-8 rounded-lg hover:bg-[#E8DCC8] flex items-center justify-center text-[#3D312A] cursor-pointer"
               >
                 {phase === 'PAUSED' ? <Play className="w-4 h-4" /> : <Pause className="w-4 h-4" />}
               </button>
@@ -441,7 +467,7 @@ export const CatchTreatsGame: React.FC<Props> = ({
               type="button"
               onClick={onExit}
               aria-label="Exit mini-game"
-              className="w-8 h-8 rounded-lg hover:bg-[#E8DCC8] flex items-center justify-center text-[#3D312A]"
+              className="w-10 h-10 sm:w-8 sm:h-8 rounded-lg hover:bg-[#E8DCC8] flex items-center justify-center text-[#3D312A] cursor-pointer"
             >
               <X className="w-4 h-4" />
             </button>
@@ -449,7 +475,7 @@ export const CatchTreatsGame: React.FC<Props> = ({
         </div>
 
         {/* Isolated Canvas Viewport */}
-        <div className="relative bg-[#DDEEF2]">
+        <div className="relative bg-[#DDEEF2] flex-1 min-h-0 flex items-center justify-center">
           <canvas
             ref={canvasRef}
             width={W}
@@ -518,6 +544,48 @@ export const CatchTreatsGame: React.FC<Props> = ({
               </div>
             </div>
           )}
+        </div>
+
+        {/* Mobile Touch Steering Pads (< md) */}
+        <div className="md:hidden grid grid-cols-2 gap-2.5 p-2.5 bg-[#F3EBDD] border-t border-[#D6C4AC] shrink-0">
+          <button
+            type="button"
+            onPointerDown={() => {
+              touchSteerRef.current = -1;
+            }}
+            onPointerUp={() => {
+              if (touchSteerRef.current === -1) touchSteerRef.current = 0;
+            }}
+            onPointerLeave={() => {
+              if (touchSteerRef.current === -1) touchSteerRef.current = 0;
+            }}
+            onPointerCancel={() => {
+              if (touchSteerRef.current === -1) touchSteerRef.current = 0;
+            }}
+            className="min-h-[50px] rounded-xl bg-[#FBF7F0] active:bg-[#E8DCC8] border-2 border-[#CEB99C] text-[#3D312A] font-bold text-sm flex items-center justify-center gap-1.5 touch-none select-none cursor-pointer"
+          >
+            <ChevronLeft className="w-5 h-5" />
+            <span>Move Left</span>
+          </button>
+          <button
+            type="button"
+            onPointerDown={() => {
+              touchSteerRef.current = 1;
+            }}
+            onPointerUp={() => {
+              if (touchSteerRef.current === 1) touchSteerRef.current = 0;
+            }}
+            onPointerLeave={() => {
+              if (touchSteerRef.current === 1) touchSteerRef.current = 0;
+            }}
+            onPointerCancel={() => {
+              if (touchSteerRef.current === 1) touchSteerRef.current = 0;
+            }}
+            className="min-h-[50px] rounded-xl bg-[#FBF7F0] active:bg-[#E8DCC8] border-2 border-[#CEB99C] text-[#3D312A] font-bold text-sm flex items-center justify-center gap-1.5 touch-none select-none cursor-pointer"
+          >
+            <span>Move Right</span>
+            <ChevronRight className="w-5 h-5" />
+          </button>
         </div>
       </div>
     </div>

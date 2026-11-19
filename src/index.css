@@ -17,9 +17,13 @@
   body,
   #root {
     height: 100%;
+    height: 100dvh;
     margin: 0;
     padding: 0;
     overflow: hidden;
+    overscroll-behavior: none;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
     background-color: var(--paper-bg);
     color: var(--ink-primary);
     font-family: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;

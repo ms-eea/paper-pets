@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { CalendarCheck, Camera, X } from 'lucide-react';
+import { CalendarCheck, Camera, Check, X } from 'lucide-react';
 import { BottomDock } from './components/BottomDock';
 import { DailyCheckInModal } from './components/DailyCheckInModal';
 import { DecorateDrawer } from './components/drawers/DecorateDrawer';
@@ -14,7 +14,7 @@ import { PaperStage } from './components/PaperStage';
 import { PetAdoptionModal } from './components/PetAdoptionModal';
 import { TitleScreen } from './components/TitleScreen';
 import { TopHud } from './components/TopHud';
-import { PET_BY_ID, TREAT_CATALOG } from './data/catalog';
+import { DEFAULT_ROOM_TIME_OF_DAY, PET_BY_ID, TREAT_CATALOG } from './data/catalog';
 import { usePaperPetsStore } from './hooks/usePaperPetsStore';
 import {
   ActiveDrawer,
@@ -38,12 +38,16 @@ export default function App() {
   const [particles, setParticles] = useState<StageParticle[]>([]);
   const [photoMode, setPhotoMode] = useState(false);
   const [showPhotoHint, setShowPhotoHint] = useState(false);
+  const [decorateDockSide, setDecorateDockSide] = useState<'left' | 'right'>('right');
+  const [decorateMinimized, setDecorateMinimized] = useState(false);
+  const [saveToastMessage, setSaveToastMessage] = useState<string | null>(null);
 
   const pauseDecay = screen !== 'PLAYING';
   const {
     data,
     welcomeNotice,
     checkInNotice,
+    hasUnsavedRoomChanges,
     dismissWelcomeNotice,
     dismissCheckInNotice,
     recordPetInteraction,
@@ -52,6 +56,7 @@ export default function App() {
     selectPet,
     renamePet,
     selectBackground,
+    setRoomTimeOfDay,
     giveLove,
     feedPet,
     equipGarment,
@@ -59,6 +64,12 @@ export default function App() {
     addPlacedDecoration,
     updatePlacedDecoration,
     removePlacedDecoration,
+    resetActiveRoom,
+    saveRoomNow,
+    saveRoomLayoutSlot,
+    loadRoomLayoutSlot,
+    overwriteRoomLayoutSlot,
+    deleteRoomLayoutSlot,
     buyShopItem,
     buyAndPlaceDecoration,
     buyAndEquipClothing,
@@ -167,6 +178,45 @@ export default function App() {
     return () => window.clearTimeout(timer);
   }, [checkInNotice, dismissCheckInNotice]);
 
+  // Auto-dismiss room save toast after 3 seconds
+  useEffect(() => {
+    if (!saveToastMessage) return;
+    const timer = window.setTimeout(() => setSaveToastMessage(null), 3000);
+    return () => window.clearTimeout(timer);
+  }, [saveToastMessage]);
+
+  const handleSaveRoom = useCallback(() => {
+    saveRoomNow();
+    setSaveToastMessage('Room decorations saved for your next visit!');
+  }, [saveRoomNow]);
+
+  const handleSaveLayoutSlot = useCallback(
+    (name?: string) => {
+      const slot = saveRoomLayoutSlot(name);
+      setSaveToastMessage(`Saved layout "${slot.name}"!`);
+    },
+    [saveRoomLayoutSlot],
+  );
+
+  const handleLoadLayoutSlot = useCallback(
+    (slotId: string) => {
+      const ok = loadRoomLayoutSlot(slotId);
+      if (ok) {
+        setSelectedDecoId(null);
+        setSaveToastMessage('Loaded saved room layout!');
+      }
+    },
+    [loadRoomLayoutSlot],
+  );
+
+  const handleOverwriteLayoutSlot = useCallback(
+    (slotId: string) => {
+      overwriteRoomLayoutSlot(slotId);
+      setSaveToastMessage('Updated saved room layout!');
+    },
+    [overwriteRoomLayoutSlot],
+  );
+
   const handleGiveLove = useCallback(() => {
     giveLove();
     triggerSquish();
@@ -214,6 +264,8 @@ export default function App() {
     setActiveDrawer(drawer);
     if (drawer !== 'decorate') {
       setSelectedDecoId(null);
+    } else {
+      setDecorateMinimized(false);
     }
   }, []);
 
@@ -268,12 +320,22 @@ export default function App() {
 
   const activePetDef = PET_BY_ID[data.activePetId];
   const activePetName = data.petNames[data.activePetId] || activePetDef.defaultName;
+  const activeTimeOfDay =
+    data.roomTimeOfDay[data.activeBackgroundId] || DEFAULT_ROOM_TIME_OF_DAY[data.activeBackgroundId];
   const currentRoomDecorations = data.roomDecorations[data.activeBackgroundId] || [];
   const selectedDecoration =
     currentRoomDecorations.find((d) => d.instanceId === selectedDecoId) || null;
 
+  const hasMobileBottomSheet =
+    !photoMode &&
+    (activeDrawer === 'feed' ||
+      activeDrawer === 'dress' ||
+      activeDrawer === 'minigames' ||
+      activeDrawer === 'shop' ||
+      (activeDrawer === 'decorate' && !decorateMinimized));
+
   return (
-    <main className="relative w-screen h-screen overflow-hidden paper-grain-bg">
+    <main className="relative w-full h-[100dvh] overflow-hidden paper-grain-bg">
       {/* TITLE SCREEN */}
       {screen === 'TITLE_MENU' && (
         <TitleScreen
@@ -312,12 +374,17 @@ export default function App() {
               hunger={data.hunger}
               coins={data.coins}
               activeBackgroundId={data.activeBackgroundId}
+              timeOfDay={activeTimeOfDay}
               unlockedBackgroundIds={data.unlockedBackgroundIds}
               dailyCheckIn={data.dailyCheckIn}
               muted={data.muted}
+              hasUnsavedRoomChanges={hasUnsavedRoomChanges}
+              lastRoomSaveAt={data.lastRoomSaveAt}
               onSelectBackground={selectBackground}
+              onChangeTimeOfDay={(time) => setRoomTimeOfDay(data.activeBackgroundId, time)}
               onOpenPets={() => handleToggleDrawer(activeDrawer === 'pets' ? 'none' : 'pets')}
               onOpenCheckIn={() => handleToggleDrawer(activeDrawer === 'checkin' ? 'none' : 'checkin')}
+              onSaveRoom={handleSaveRoom}
               onEnterPhotoMode={handleEnterPhotoMode}
               onToggleMute={toggleMute}
               onReturnTitle={() => {
@@ -331,6 +398,7 @@ export default function App() {
 
           <PaperStage
             backgroundId={data.activeBackgroundId}
+            timeOfDay={activeTimeOfDay}
             petId={data.activePetId}
             petName={activePetName}
             stickerMap={stickerMap}
@@ -338,6 +406,7 @@ export default function App() {
             decorations={currentRoomDecorations}
             decorateMode={activeDrawer === 'decorate' && !photoMode}
             photoMode={photoMode}
+            hasMobileBottomSheet={hasMobileBottomSheet}
             selectedDecoId={selectedDecoId}
             onSelectDeco={setSelectedDecoId}
             onUpdateDeco={updatePlacedDecoration}
@@ -367,13 +436,13 @@ export default function App() {
                 className="fixed inset-0 z-30 cursor-pointer bg-transparent"
               />
               <div
-                className={`fixed bottom-5 left-1/2 -translate-x-1/2 z-40 pointer-events-none paper-card rounded-xl px-4 py-2 flex items-center gap-2 text-xs font-semibold text-[#3D312A] transition-opacity duration-500 ${
+                className={`fixed bottom-5 left-1/2 -translate-x-1/2 z-40 pointer-events-none paper-card rounded-xl px-4 py-2 flex items-center gap-2 text-xs font-semibold text-[#3D312A] max-w-[92vw] transition-opacity duration-500 ${
                   showPhotoHint ? 'opacity-95' : 'opacity-0'
                 }`}
               >
                 <Camera className="w-4 h-4 text-[#2F7D6D] shrink-0" />
-                <span className="whitespace-nowrap">
-                  Photo Mode — click anywhere or press Esc to show UI
+                <span className="truncate">
+                  Photo Mode — tap anywhere to show UI
                 </span>
               </div>
               <button
@@ -389,7 +458,7 @@ export default function App() {
 
           {/* Returning Player Decay Notice */}
           {!photoMode && welcomeNotice && screen === 'PLAYING' && !checkInNotice && (
-            <div className="fixed top-20 left-1/2 -translate-x-1/2 z-40 paper-card rounded-xl px-4 py-2.5 flex items-center gap-3 max-w-md w-[92vw]">
+            <div className="fixed top-16 md:top-20 left-1/2 -translate-x-1/2 z-40 paper-card rounded-xl px-3.5 py-2.5 flex items-center gap-3 max-w-md w-[94vw]">
               <div className="flex-1 text-xs text-[#3D312A]">
                 <strong>Welcome back!</strong> You were away{' '}
                 <span className="font-mono-num">{welcomeNotice.minutesAway}</span> min —{' '}
@@ -399,7 +468,7 @@ export default function App() {
                 type="button"
                 onClick={dismissWelcomeNotice}
                 aria-label="Dismiss welcome notice"
-                className="w-7 h-7 rounded hover:bg-[#E8DCC8] flex items-center justify-center text-[#3D312A] shrink-0"
+                className="w-9 h-9 md:w-7 md:h-7 rounded hover:bg-[#E8DCC8] flex items-center justify-center text-[#3D312A] shrink-0 cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -408,7 +477,7 @@ export default function App() {
 
           {/* Daily Check-In Streak Toast */}
           {!photoMode && checkInNotice && screen === 'PLAYING' && (
-            <div className="fixed top-20 left-1/2 -translate-x-1/2 z-40 paper-card rounded-xl px-4 py-2.5 flex items-center gap-3 max-w-md w-[92vw] border-[#2F7D6D]">
+            <div className="fixed top-16 md:top-20 left-1/2 -translate-x-1/2 z-40 paper-card rounded-xl px-3.5 py-2.5 flex items-center gap-3 max-w-md w-[94vw] border-[#2F7D6D]">
               <CalendarCheck className="w-4 h-4 text-[#2F7D6D] shrink-0" />
               <div className="flex-1 text-xs text-[#3D312A]">
                 <strong>
@@ -466,11 +535,47 @@ export default function App() {
             />
           )}
 
+          {/* Room Save Confirmation Toast */}
+          {!photoMode && saveToastMessage && screen === 'PLAYING' && (
+            <div className="fixed top-16 md:top-20 left-1/2 -translate-x-1/2 z-40 paper-card rounded-xl px-4 py-2 flex items-center gap-2 border-[#2F7D6D] bg-[#FBF7F0] max-w-[92vw]">
+              <Check className="w-4 h-4 text-[#2F7D6D] shrink-0" />
+              <span className="text-xs font-semibold text-[#3D312A] truncate">
+                {saveToastMessage}
+              </span>
+            </div>
+          )}
+
           {activeDrawer === 'decorate' && (
             <DecorateDrawer
               coins={data.coins}
               unlockedDecorationIds={data.unlockedDecorationIds}
               selectedDecoration={selectedDecoration}
+              activeBackgroundId={data.activeBackgroundId}
+              timeOfDay={activeTimeOfDay}
+              hasUnsavedRoomChanges={hasUnsavedRoomChanges}
+              lastRoomSaveAt={data.lastRoomSaveAt}
+              savedRoomSlots={data.savedRoomSlots}
+              dockSide={decorateDockSide}
+              minimized={decorateMinimized}
+              onToggleDockSide={() => {
+                sound.playClick();
+                setDecorateDockSide((side) => (side === 'right' ? 'left' : 'right'));
+              }}
+              onToggleMinimized={() => {
+                sound.playClick();
+                setDecorateMinimized((m) => !m);
+              }}
+              onChangeTimeOfDay={(time) => setRoomTimeOfDay(data.activeBackgroundId, time)}
+              onResetRoom={() => {
+                resetActiveRoom();
+                setSelectedDecoId(null);
+                setSaveToastMessage('Room reset to starter layout!');
+              }}
+              onSaveRoom={handleSaveRoom}
+              onSaveLayoutSlot={handleSaveLayoutSlot}
+              onLoadLayoutSlot={handleLoadLayoutSlot}
+              onOverwriteLayoutSlot={handleOverwriteLayoutSlot}
+              onDeleteLayoutSlot={deleteRoomLayoutSlot}
               onAddDecoration={handlePlaceDecoration}
               onBuyAndPlace={handleBuyAndPlace}
               onUpdateSelected={(patch) => {
@@ -486,6 +591,7 @@ export default function App() {
               onClose={() => {
                 setActiveDrawer('none');
                 setSelectedDecoId(null);
+                setDecorateMinimized(false);
               }}
             />
           )}

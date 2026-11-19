@@ -7,6 +7,7 @@ import {
   PetOutfit,
   PlacedDecoration,
   StageParticle,
+  TimeOfDay,
 } from '../types/game';
 import { PetWithWardrobe } from './PetWithWardrobe';
 import { PaperBackground } from './svg/PaperBackgrounds';
@@ -14,6 +15,7 @@ import { PaperDecorationSvg } from './svg/PaperDecorations';
 
 interface Props {
   backgroundId: BackgroundId;
+  timeOfDay: TimeOfDay;
   petId: PetId;
   petName: string;
   stickerMap: Partial<Record<PetId, string>>;
@@ -21,6 +23,7 @@ interface Props {
   decorations: PlacedDecoration[];
   decorateMode: boolean;
   photoMode?: boolean;
+  hasMobileBottomSheet?: boolean;
   selectedDecoId: string | null;
   onSelectDeco: (id: string | null) => void;
   onUpdateDeco: (id: string, patch: Partial<PlacedDecoration>) => void;
@@ -37,6 +40,7 @@ type DragState =
   | {
       mode: 'move';
       id: string;
+      pointerId: number;
       startClientX: number;
       startClientY: number;
       origX: number;
@@ -45,6 +49,7 @@ type DragState =
   | {
       mode: 'resize';
       id: string;
+      pointerId: number;
       startClientX: number;
       startClientY: number;
       origScale: number;
@@ -52,6 +57,7 @@ type DragState =
 
 export const PaperStage: React.FC<Props> = ({
   backgroundId,
+  timeOfDay,
   petId,
   petName,
   stickerMap,
@@ -59,6 +65,7 @@ export const PaperStage: React.FC<Props> = ({
   decorations,
   decorateMode,
   photoMode = false,
+  hasMobileBottomSheet = false,
   selectedDecoId,
   onSelectDeco,
   onUpdateDeco,
@@ -88,56 +95,84 @@ export const PaperStage: React.FC<Props> = ({
   useEffect(() => {
     if (!dragState) return;
     const handlePointerMove = (e: PointerEvent) => {
+      if (e.pointerId !== dragState.pointerId) return;
       const rect = stageRef.current?.getBoundingClientRect();
       if (!rect) return;
       if (dragState.mode === 'move') {
         const dxPct = ((e.clientX - dragState.startClientX) / rect.width) * 100;
         const dyPct = ((e.clientY - dragState.startClientY) / rect.height) * 100;
         onUpdateDeco(dragState.id, {
-          x: Math.min(94, Math.max(6, dragState.origX + dxPct)),
-          y: Math.min(88, Math.max(12, dragState.origY + dyPct)),
+          x: Math.min(97, Math.max(3, dragState.origX + dxPct)),
+          y: Math.min(89, Math.max(15, dragState.origY + dyPct)),
         });
       } else {
-        const delta = (e.clientX - dragState.startClientX + (e.clientY - dragState.startClientY)) * 0.0065;
-        const nextScale = Math.min(2.2, Math.max(0.35, Math.round((dragState.origScale + delta) * 100) / 100));
+        const delta =
+          (e.clientX - dragState.startClientX + (e.clientY - dragState.startClientY)) * 0.0065;
+        const nextScale = Math.min(
+          2.2,
+          Math.max(0.35, Math.round((dragState.origScale + delta) * 100) / 100),
+        );
         onUpdateDeco(dragState.id, { scale: nextScale });
       }
     };
-    const handlePointerUp = () => setDragState(null);
+    const handlePointerUp = (e: PointerEvent) => {
+      if (e.pointerId === dragState.pointerId) {
+        setDragState(null);
+      }
+    };
 
     window.addEventListener('pointermove', handlePointerMove);
     window.addEventListener('pointerup', handlePointerUp);
+    window.addEventListener('pointercancel', handlePointerUp);
     return () => {
       window.removeEventListener('pointermove', handlePointerMove);
       window.removeEventListener('pointerup', handlePointerUp);
+      window.removeEventListener('pointercancel', handlePointerUp);
     };
   }, [dragState, onUpdateDeco]);
 
-  const petSizePx = Math.min(310, Math.max(200, Math.round(stageWidth * 0.24)));
+  const isCompactPhone = stageWidth < 640;
+  const isTabletOrBelow = stageWidth < 768;
+
+  const petSizePx = isCompactPhone
+    ? hasMobileBottomSheet
+      ? Math.min(168, Math.max(124, Math.round(stageWidth * 0.34)))
+      : Math.min(208, Math.max(148, Math.round(stageWidth * 0.42)))
+    : Math.min(310, Math.max(200, Math.round(stageWidth * 0.24)));
+
+  const propViewportFactor = isCompactPhone
+    ? Math.max(0.64, Math.min(0.88, stageWidth / 520))
+    : 1;
 
   const renderDecoration = (deco: PlacedDecoration) => {
     const def = DECORATION_CATALOG.find((d) => d.id === deco.itemId);
-    const basePx = def?.baseSizePx ?? 100;
+    const basePx = Math.round((def?.baseSizePx ?? 100) * propViewportFactor);
+    const canDragAnytime = !photoMode;
+    const isDraggingThis = dragState?.id === deco.instanceId;
     const isSelected = decorateMode && selectedDecoId === deco.instanceId;
 
     return (
       <div
         key={deco.instanceId}
         onPointerDown={(e) => {
-          if (!decorateMode) return;
+          if (!canDragAnytime) return;
           e.stopPropagation();
-          onSelectDeco(deco.instanceId);
+          if (decorateMode) {
+            onSelectDeco(deco.instanceId);
+          }
           setDragState({
             mode: 'move',
             id: deco.instanceId,
+            pointerId: e.pointerId,
             startClientX: e.clientX,
             startClientY: e.clientY,
             origX: deco.x,
             origY: deco.y,
           });
         }}
-        className={`absolute select-none ${
-          decorateMode ? 'cursor-grab active:cursor-grabbing' : 'pointer-events-none'
+        title={canDragAnytime && !decorateMode ? `Drag to move ${def?.name || 'decoration'}` : undefined}
+        className={`absolute select-none touch-none ${
+          canDragAnytime ? 'cursor-grab active:cursor-grabbing' : 'pointer-events-none'
         }`}
         style={{
           left: `${deco.x}%`,
@@ -145,19 +180,23 @@ export const PaperStage: React.FC<Props> = ({
           width: basePx,
           height: basePx,
           transform: `translate(-50%, -50%) scale(${deco.scale})`,
-          zIndex: isSelected ? 40 : deco.zLayer === 'front' ? 25 : 10,
+          zIndex: isSelected || isDraggingThis ? 45 : deco.zLayer === 'front' ? 25 : 10,
         }}
       >
         <div
-          className={`w-full h-full sticker-shadow transition-shadow duration-150 ${
-            isSelected ? 'ring-2 ring-[#D95D39] ring-offset-2 ring-offset-transparent rounded-xl' : ''
+          className={`w-full h-full sticker-shadow transition-shadow duration-150 rounded-xl ${
+            isSelected
+              ? 'ring-2 ring-[#D95D39] ring-offset-2 ring-offset-transparent'
+              : canDragAnytime && !decorateMode
+                ? 'hover:ring-2 hover:ring-[#D95D39]/40'
+                : ''
           }`}
           style={{ transform: deco.flipped ? 'scaleX(-1)' : undefined }}
         >
           <PaperDecorationSvg itemId={deco.itemId} />
         </div>
 
-        {/* Quick X Remove Badge on Item in Decorate Mode */}
+        {/* Quick X Remove Badge on Item in Decorate Mode (enlarged touch target on mobile) */}
         {decorateMode && (
           <button
             type="button"
@@ -168,17 +207,16 @@ export const PaperStage: React.FC<Props> = ({
               e.stopPropagation();
               onRemoveDeco(deco.instanceId);
             }}
-            className="absolute -top-2.5 -right-2.5 z-10 w-6 h-6 rounded-full bg-[#FBF7F0] hover:bg-[#D95D39] text-[#B83B1D] hover:text-white border-2 border-[#CEB99C] hover:border-[#FFFDF8] shadow-md flex items-center justify-center cursor-pointer transition-colors"
+            className="absolute -top-3.5 -right-3.5 md:-top-2.5 md:-right-2.5 z-10 w-8 h-8 md:w-6 md:h-6 rounded-full bg-[#FBF7F0] hover:bg-[#D95D39] text-[#B83B1D] hover:text-white border-2 border-[#CEB99C] hover:border-[#FFFDF8] shadow-md flex items-center justify-center cursor-pointer transition-colors"
             style={{ transform: `scale(${1 / deco.scale})` }}
           >
-            <X className="w-3.5 h-3.5" strokeWidth={2.5} />
+            <X className="w-4 h-4 md:w-3.5 md:h-3.5" strokeWidth={2.5} />
           </button>
         )}
 
-        {/* Selected Prop Controls (keeps visual size independent of prop scale) */}
+        {/* Selected Prop Controls (enlarged touch hitboxes on mobile) */}
         {isSelected && (
           <>
-            {/* Corner Drag Resize Handle */}
             <button
               type="button"
               aria-label="Resize decoration"
@@ -187,21 +225,21 @@ export const PaperStage: React.FC<Props> = ({
                 setDragState({
                   mode: 'resize',
                   id: deco.instanceId,
+                  pointerId: e.pointerId,
                   startClientX: e.clientX,
                   startClientY: e.clientY,
                   origScale: deco.scale,
                 });
               }}
-              className="absolute -bottom-3 -right-3 w-7 h-7 rounded-full bg-[#D95D39] text-white border-2 border-[#FFFDF8] shadow-md flex items-center justify-center cursor-nwse-resize"
+              className="absolute -bottom-4 -right-4 md:-bottom-3 md:-right-3 w-9 h-9 md:w-7 md:h-7 rounded-full bg-[#D95D39] text-white border-2 border-[#FFFDF8] shadow-md flex items-center justify-center cursor-nwse-resize touch-none"
               style={{ transform: `scale(${1 / deco.scale})` }}
             >
-              <Maximize2 className="w-3.5 h-3.5" />
+              <Maximize2 className="w-4 h-4 md:w-3.5 md:h-3.5" />
             </button>
 
-            {/* Floating Layer & Flip Toolbar */}
             <div
               onPointerDown={(e) => e.stopPropagation()}
-              className="absolute -top-11 left-1/2 -translate-x-1/2 flex items-center gap-1 px-2 py-1 rounded-lg bg-[#FBF7F0] border border-[#CEB99C] shadow-md whitespace-nowrap"
+              className="absolute -top-12 md:-top-11 left-1/2 -translate-x-1/2 flex items-center gap-1 px-2 py-1 rounded-xl bg-[#FBF7F0] border border-[#CEB99C] shadow-md whitespace-nowrap"
               style={{ transform: `translateX(-50%) scale(${1 / deco.scale})` }}
             >
               <button
@@ -212,7 +250,7 @@ export const PaperStage: React.FC<Props> = ({
                     zLayer: deco.zLayer === 'back' ? 'front' : 'back',
                   })
                 }
-                className="p-1.5 rounded hover:bg-[#E8DCC8] text-[#3D312A] text-xs font-medium flex items-center gap-1"
+                className="min-h-[34px] md:min-h-0 px-2 py-1.5 rounded-lg hover:bg-[#E8DCC8] text-[#3D312A] text-xs font-semibold flex items-center gap-1 cursor-pointer"
               >
                 {deco.zLayer === 'back' ? (
                   <>
@@ -226,9 +264,10 @@ export const PaperStage: React.FC<Props> = ({
               </button>
               <button
                 type="button"
+                aria-label="Flip horizontally"
                 title="Flip horizontally"
                 onClick={() => onUpdateDeco(deco.instanceId, { flipped: !deco.flipped })}
-                className="p-1.5 rounded hover:bg-[#E8DCC8] text-[#3D312A]"
+                className="min-h-[34px] min-w-[34px] md:min-h-0 md:min-w-0 p-1.5 rounded-lg hover:bg-[#E8DCC8] text-[#3D312A] flex items-center justify-center cursor-pointer"
               >
                 <FlipHorizontal className="w-3.5 h-3.5" />
               </button>
@@ -244,25 +283,32 @@ export const PaperStage: React.FC<Props> = ({
 
   const needsCareHint = love < 35 || hunger < 35;
 
+  const petTopClass =
+    isTabletOrBelow && hasMobileBottomSheet
+      ? 'top-[32%]'
+      : isTabletOrBelow
+        ? 'top-[52%]'
+        : 'top-[56%]';
+
   return (
     <div
       ref={stageRef}
       onPointerDown={() => {
         if (decorateMode) onSelectDeco(null);
       }}
-      className="relative w-full h-full overflow-hidden"
+      className="relative w-full h-full overflow-hidden touch-pan-x touch-pan-y"
     >
       {/* Cut-Paper Background Scene */}
       <div className="absolute inset-0 pointer-events-none">
-        <PaperBackground backgroundId={backgroundId} />
+        <PaperBackground backgroundId={backgroundId} timeOfDay={timeOfDay} />
       </div>
 
       {/* Back Depth Decorations */}
       {backDecos.map(renderDecoration)}
 
-      {/* Center Stage Pet Sticker + Wardrobe */}
+      {/* Center Stage Pet Sticker + Wardrobe (nudges up on mobile when half-screen sheet is open) */}
       <div
-        className={`absolute left-1/2 top-[56%] -translate-x-1/2 -translate-y-1/2 z-20 ${
+        className={`absolute left-1/2 -translate-x-1/2 -translate-y-1/2 z-20 transition-[top] duration-200 ${petTopClass} ${
           decorateMode ? 'pointer-events-none opacity-85' : ''
         }`}
       >
@@ -287,7 +333,7 @@ export const PaperStage: React.FC<Props> = ({
       {/* Front Depth Decorations */}
       {frontDecos.map(renderDecoration)}
 
-      {/* Particle Bursts (Hearts, Treat Crumbs, Sparkles) */}
+      {/* Particle Bursts */}
       <div className="absolute inset-0 pointer-events-none z-30">
         {particles.map((p) => (
           <div
