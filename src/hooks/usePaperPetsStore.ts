@@ -118,6 +118,7 @@ function loadAndNormalizeSave(): { save: PaperPetsSaveData; awaySummary: AwaySum
       ...parsed,
       petNames: { ...initial.petNames, ...(parsed.petNames || {}) },
       outfits: { ...initial.outfits, ...(parsed.outfits || {}) },
+      lastClothingSlots: { ...(parsed.lastClothingSlots || {}) },
       treatCounts: { ...initial.treatCounts, ...(parsed.treatCounts || {}) },
       roomDecorations: rawRoomDecorations,
       roomTimeOfDay: {
@@ -365,12 +366,26 @@ export function usePaperPetsStore(pauseDecay: boolean) {
         } else {
           petOutfit[slot] = garment;
         }
+        const nextLastSlots = { ...(prev.lastClothingSlots || {}) };
+        if (garment) {
+          nextLastSlots[prev.activePetId] = slot;
+        } else if (!nextLastSlots[prev.activePetId] || nextLastSlots[prev.activePetId] === slot) {
+          const fallbackSlot = (['hat', 'eyewear', 'neckwear', 'top'] as ClothingSlot[]).find(
+            (candidate) => Boolean(petOutfit[candidate]),
+          );
+          if (fallbackSlot) {
+            nextLastSlots[prev.activePetId] = fallbackSlot;
+          } else {
+            delete nextLastSlots[prev.activePetId];
+          }
+        }
         const next = {
           ...prev,
           outfits: {
             ...prev.outfits,
             [prev.activePetId]: petOutfit,
           },
+          lastClothingSlots: nextLastSlots,
         };
         return garment ? applyDailyCheckInToSave(next) : next;
       });
@@ -393,6 +408,10 @@ export function usePaperPetsStore(pauseDecay: boolean) {
           outfits: {
             ...prev.outfits,
             [prev.activePetId]: petOutfit,
+          },
+          lastClothingSlots: {
+            ...(prev.lastClothingSlots || {}),
+            [prev.activePetId]: slot,
           },
         };
       });
@@ -638,6 +657,10 @@ export function usePaperPetsStore(pauseDecay: boolean) {
             ...prev.outfits,
             [prev.activePetId]: petOutfit,
           },
+          lastClothingSlots: {
+            ...(prev.lastClothingSlots || {}),
+            [prev.activePetId]: slot,
+          },
         });
       });
       return true;
@@ -670,6 +693,10 @@ export function usePaperPetsStore(pauseDecay: boolean) {
           outfits: {
             ...prev.outfits,
             [prev.activePetId]: petOutfit,
+          },
+          lastClothingSlots: {
+            ...(prev.lastClothingSlots || {}),
+            [prev.activePetId]: slot,
           },
         };
       });

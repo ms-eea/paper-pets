@@ -180,6 +180,7 @@ export interface PaperPetsSaveData {
   activeBackgroundId: BackgroundId;
   roomTimeOfDay: Record<BackgroundId, TimeOfDay>;
   outfits: Record<PetId, PetOutfit>;
+  lastClothingSlots?: Partial<Record<PetId, ClothingSlot>>;
   unlockedClothingIds: string[];
   unlockedPatternIds: PatternId[];
   unlockedDecorationIds: string[];

@@ -7,6 +7,7 @@ import { DressUpDrawer } from './components/drawers/DressUpDrawer';
 import { FeedTray } from './components/drawers/FeedTray';
 import { MiniGamesDrawer } from './components/drawers/MiniGamesDrawer';
 import { ShopDrawer, ShopTab } from './components/drawers/ShopDrawer';
+import { EventActionBanner } from './components/EventActionBanner';
 import { CatchTreatsGame } from './components/minigames/CatchTreatsGame';
 import { ColorShapeSortGame } from './components/minigames/ColorShapeSortGame';
 import { StickerMemoryGame } from './components/minigames/StickerMemoryGame';
@@ -461,6 +462,35 @@ export default function App() {
             </>
           )}
 
+          {/* Priority Floating Event Call-to-Action Banner */}
+          {!photoMode &&
+            screen === 'PLAYING' &&
+            !welcomeNotice &&
+            !checkInNotice &&
+            !saveToastMessage &&
+            activeDrawer !== 'pets' &&
+            activeDrawer !== 'checkin' && (
+              <EventActionBanner
+                petName={activePetName}
+                love={data.love}
+                hunger={data.hunger}
+                dailyCheckIn={data.dailyCheckIn}
+                hasUnsavedRoomChanges={hasUnsavedRoomChanges}
+                hideOnMobile={hasMobileBottomSheet}
+                onClaimCheckIn={() => {
+                  const grant = claimDailyCheckIn();
+                  if (grant) {
+                    triggerSquish();
+                    spawnBurst('coin', `+${grant.coinsAwarded} Coins`);
+                  }
+                }}
+                onOpenCheckInModal={() => handleToggleDrawer('checkin')}
+                onOpenFeed={() => handleToggleDrawer('feed')}
+                onGiveLove={handleGiveLove}
+                onSaveRoom={handleSaveRoom}
+              />
+            )}
+
           {/* Returning Player Decay Notice */}
           {!photoMode && welcomeNotice && screen === 'PLAYING' && !checkInNotice && (
             <div className="fixed top-16 md:top-20 left-1/2 -translate-x-1/2 z-40 paper-card rounded-xl px-3.5 py-2.5 flex items-center gap-3 max-w-md w-[94vw]">
@@ -527,8 +557,10 @@ export default function App() {
 
           {activeDrawer === 'dress' && (
             <DressUpDrawer
+              key={data.activePetId}
               coins={data.coins}
               outfit={data.outfits[data.activePetId] || {}}
+              lastClothingSlot={data.lastClothingSlots?.[data.activePetId]}
               unlockedClothingIds={data.unlockedClothingIds}
               unlockedPatternIds={data.unlockedPatternIds}
               onEquip={equipGarment}
