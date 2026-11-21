@@ -248,6 +248,72 @@ export const GarmentSvg: React.FC<Props> = ({
           <line x1="118" y1="53" x2="96" y2="58" stroke="#FFFDF8" strokeWidth="2.5" opacity="0.65" strokeLinecap="round" />
         </g>
       )}
+      {itemId === 'hat_valentine_hearts' && (
+        <g>
+          <path d="M36 68 Q80 50 124 68" fill="none" stroke="#C85C7D" strokeWidth="6" strokeLinecap="round" />
+          <path d="M58 55 L52 34" stroke="#3D312A" strokeWidth="3" strokeLinecap="round" />
+          <path d="M102 55 L108 34" stroke="#3D312A" strokeWidth="3" strokeLinecap="round" />
+          {[50, 110].map((cx) => (
+            <path
+              key={cx}
+              d={`M${cx} 40 C${cx - 15} 30 ${cx - 15} 14 ${cx - 6} 14 C${cx - 2} 14 ${cx} 18 ${cx} 20 C${cx} 18 ${cx + 2} 14 ${cx + 6} 14 C${cx + 15} 14 ${cx + 15} 30 ${cx} 40 Z`}
+              fill={fillRef}
+              stroke="#3D312A"
+              strokeWidth="3"
+              strokeLinejoin="round"
+            />
+          ))}
+        </g>
+      )}
+      {itemId === 'hat_july4_tophat' && (
+        <g>
+          <ellipse cx="80" cy="61" rx="54" ry="9.5" fill={fillRef} stroke="#3D312A" strokeWidth="3.5" />
+          <rect x="48" y="14" width="64" height="47" rx="6" fill={fillRef} stroke="#3D312A" strokeWidth="3.5" />
+          <rect x="48" y="45" width="64" height="10" fill="#FFFDF8" stroke="#3D312A" strokeWidth="2" />
+          <polygon points="80,22 83,30 91,30 85,35 87,43 80,38 73,43 75,35 69,30 77,30" fill="#F2CC66" stroke="#3D312A" strokeWidth="2" />
+        </g>
+      )}
+      {itemId === 'hat_halloween_witch' && (
+        <g>
+          <ellipse cx="80" cy="60" rx="60" ry="10" fill={fillRef} stroke="#3D312A" strokeWidth="3.5" />
+          <path d="M44 58 L74 6 C80 2 92 10 88 22 L116 58 Z" fill={fillRef} stroke="#3D312A" strokeWidth="3.5" strokeLinejoin="round" />
+          <path d="M48 51 Q80 57 112 51" fill="none" stroke="#E09F3E" strokeWidth="7" />
+          <rect x="73" y="47" width="14" height="11" rx="2" fill="none" stroke="#F2CC66" strokeWidth="3" />
+        </g>
+      )}
+      {itemId === 'hat_thanksgiving_pilgrim' && (
+        <g>
+          <ellipse cx="80" cy="60" rx="58" ry="10" fill={fillRef} stroke="#3D312A" strokeWidth="3.5" />
+          <path d="M44 58 L50 18 Q80 22 110 18 L116 58 Z" fill={fillRef} stroke="#3D312A" strokeWidth="3.5" strokeLinejoin="round" />
+          <path d="M45 48 Q80 54 115 48" fill="none" stroke="#FFFDF8" strokeWidth="6.5" />
+          <rect x="70" y="42" width="20" height="14" rx="2.5" fill="none" stroke="#F2CC66" strokeWidth="3.5" />
+        </g>
+      )}
+      {itemId === 'hat_christmas_santa' && (
+        <g>
+          <path d="M38 56 C42 18 96 6 128 38 C114 40 108 50 112 58 Z" fill={fillRef} stroke="#3D312A" strokeWidth="3.5" strokeLinejoin="round" />
+          <rect x="34" y="51" width="84" height="19" rx="9.5" fill="#FFFDF8" stroke="#3D312A" strokeWidth="3.5" />
+          <circle cx="131" cy="41" r="9.5" fill="#FFFDF8" stroke="#3D312A" strokeWidth="3" />
+        </g>
+      )}
+      {itemId === 'hat_christmas_antlers' && (
+        <g>
+          <path d="M36 69 Q80 54 124 69" fill="none" stroke="#C94A38" strokeWidth="7" strokeLinecap="round" />
+          <path d="M54 58 C46 40 34 28 32 14 M46 40 L30 34 M50 32 L58 20" fill="none" stroke="#7E5732" strokeWidth="6.5" strokeLinecap="round" strokeLinejoin="round" />
+          <path d="M106 58 C114 40 126 28 128 14 M114 40 L130 34 M110 32 L102 20" fill="none" stroke="#7E5732" strokeWidth="6.5" strokeLinecap="round" strokeLinejoin="round" />
+          <circle cx="80" cy="56" r="6" fill={fillRef} stroke="#3D312A" strokeWidth="2.5" />
+          <circle cx="71" cy="59" r="4" fill="#3B8A77" stroke="#3D312A" strokeWidth="2" />
+          <circle cx="89" cy="59" r="4" fill="#3B8A77" stroke="#3D312A" strokeWidth="2" />
+        </g>
+      )}
+      {itemId === 'hat_newyear_tiara' && (
+        <g>
+          <path d="M34 68 L44 38 L62 54 L80 24 L98 54 L116 38 L126 68 Z" fill={fillRef} stroke="#3D312A" strokeWidth="3.5" strokeLinejoin="round" />
+          <polygon points="80,10 83,18 91,18 85,23 87,31 80,26 73,31 75,23 69,18 77,18" fill="#F2CC66" stroke="#3D312A" strokeWidth="2" />
+          <circle cx="44" cy="36" r="5" fill="#FFFDF8" stroke="#3D312A" strokeWidth="2" />
+          <circle cx="116" cy="36" r="5" fill="#FFFDF8" stroke="#3D312A" strokeWidth="2" />
+        </g>
+      )}
 
       {/* EYEWEAR */}
       {itemId === 'eye_round' && (
@@ -331,6 +397,41 @@ export const GarmentSvg: React.FC<Props> = ({
           <line x1="74" y1="58" x2="86" y2="58" stroke="#6E4A2C" strokeWidth="6" />
         </g>
       )}
+      {itemId === 'eye_valentine_rose' && (
+        <g>
+          <path d="M20 44 L28 34 L34 46" fill="none" stroke="#FFFDF8" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" />
+          <path d="M140 44 L132 34 L126 46" fill="none" stroke="#FFFDF8" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" />
+          {[50, 110].map((cx) => (
+            <path
+              key={cx}
+              d={`M${cx} 75 C${cx - 22} 62 ${cx - 22} 41 ${cx - 9} 41 C${cx - 3} 41 ${cx} 47 ${cx} 49 C${cx} 47 ${cx + 3} 41 ${cx + 9} 41 C${cx + 22} 41 ${cx + 22} 62 ${cx} 75 Z`}
+              fill={fillRef}
+              fillOpacity="0.82"
+              stroke="#FFFDF8"
+              strokeWidth="3.5"
+            />
+          ))}
+          <path d="M70 50 H90" stroke="#FFFDF8" strokeWidth="4" strokeLinecap="round" />
+        </g>
+      )}
+      {itemId === 'eye_newyear_stars' && (
+        <g>
+          {[49, 111].map((cx) => (
+            <polygon
+              key={cx}
+              points={`${cx},31 ${cx + 7},47 ${cx + 25},49 ${cx + 12},60 ${cx + 15},78 ${cx},68 ${cx - 15},78 ${cx - 12},60 ${cx - 25},49 ${cx - 7},47`}
+              fill={fillRef}
+              fillOpacity="0.78"
+              stroke="#F2CC66"
+              strokeWidth="3.5"
+              strokeLinejoin="round"
+            />
+          ))}
+          <path d="M70 54 H90" stroke="#F2CC66" strokeWidth="4.5" strokeLinecap="round" />
+          <circle cx="32" cy="40" r="3" fill="#FFFDF8" />
+          <circle cx="128" cy="40" r="3" fill="#FFFDF8" />
+        </g>
+      )}
 
       {/* NECKWEAR */}
       {itemId === 'neck_bowtie' && (
@@ -402,6 +503,40 @@ export const GarmentSvg: React.FC<Props> = ({
             />
           ))}
           <circle cx="80" cy="76" r="7.5" fill={fillRef} stroke="#3D312A" strokeWidth="2.5" />
+        </g>
+      )}
+      {itemId === 'neck_harvest_collar' && (
+        <g>
+          <path d="M30 48 Q80 66 130 48" fill="none" stroke={fillRef} strokeWidth="14" strokeLinecap="round" />
+          <path d="M30 48 Q80 66 130 48" fill="none" stroke="#3D312A" strokeWidth="2.5" strokeLinecap="round" />
+          {[46, 68, 92, 114].map((lx, idx) => (
+            <polygon
+              key={lx}
+              points={`${lx},58 ${lx - 8},72 ${lx},80 ${lx + 8},72`}
+              fill={idx % 2 === 0 ? '#E09F3E' : '#D95D39'}
+              stroke="#3D312A"
+              strokeWidth="2.2"
+              strokeLinejoin="round"
+            />
+          ))}
+        </g>
+      )}
+      {itemId === 'neck_holiday_ribbon' && (
+        <g>
+          <path d="M84 62 L108 106 L82 110 L66 68 Z" fill={fillRef} stroke="#3D312A" strokeWidth="3.2" strokeLinejoin="round" />
+          <rect x="34" y="46" width="92" height="24" rx="11" fill={fillRef} stroke="#3D312A" strokeWidth="3.2" />
+          <line x1="84" y1="106" x2="106" y2="102" stroke="#FFFDF8" strokeWidth="4" strokeLinecap="round" />
+          <circle cx="62" cy="58" r="4.5" fill="#2F7D6D" stroke="#3D312A" strokeWidth="1.8" />
+          <circle cx="69" cy="55" r="3" fill="#C94A38" />
+        </g>
+      )}
+      {itemId === 'neck_newyear_bowtie' && (
+        <g>
+          <polygon points="80,60 36,36 36,84" fill={fillRef} stroke="#F2CC66" strokeWidth="3.5" strokeLinejoin="round" />
+          <polygon points="80,60 124,36 124,84" fill={fillRef} stroke="#F2CC66" strokeWidth="3.5" strokeLinejoin="round" />
+          <rect x="69" y="47" width="22" height="26" rx="6" fill="#F2CC66" stroke="#3D312A" strokeWidth="3" />
+          <circle cx="54" cy="60" r="3" fill="#FFFDF8" />
+          <circle cx="106" cy="60" r="3" fill="#FFFDF8" />
         </g>
       )}
 
@@ -521,6 +656,42 @@ export const GarmentSvg: React.FC<Props> = ({
           <path d="M52 24 L94 64 M108 24 L66 64" stroke="#FFFDF8" strokeWidth="6" strokeLinecap="round" />
           <rect x="44" y="64" width="72" height="16" fill="#E07A5F" stroke="#3D312A" strokeWidth="2.5" />
           <rect x="72" y="61" width="16" height="22" rx="3" fill="#F2CC66" stroke="#3D312A" strokeWidth="2" />
+        </g>
+      )}
+      {itemId === 'top_holiday_sweater' && (
+        <g>
+          <path
+            d="M44 24 L18 48 L32 64 L44 52 V102 H116 V52 L128 64 L142 48 L116 24 Q80 36 44 24 Z"
+            fill={fillRef}
+            stroke="#3D312A"
+            strokeWidth="3.5"
+            strokeLinejoin="round"
+          />
+          <path d="M46 25 Q80 39 114 25" fill="none" stroke="#FFFDF8" strokeWidth="5.5" strokeLinecap="round" />
+          <rect x="44" y="92" width="72" height="10" rx="3" fill="#FFFDF8" fillOpacity="0.8" stroke="#3D312A" strokeWidth="2.5" />
+          <polygon points="80,46 64,76 96,76" fill="#2F7D6D" stroke="#FFFDF8" strokeWidth="2.2" strokeLinejoin="round" />
+          <circle cx="80" cy="44" r="3.5" fill="#F2CC66" />
+        </g>
+      )}
+      {itemId === 'top_spooky_vest' && (
+        <g>
+          <path
+            d="M44 24 L28 40 V98 H74 V44 L44 24 Z"
+            fill={fillRef}
+            stroke="#3D312A"
+            strokeWidth="3.5"
+            strokeLinejoin="round"
+          />
+          <path
+            d="M116 24 L132 40 V98 H86 V44 L116 24 Z"
+            fill={fillRef}
+            stroke="#3D312A"
+            strokeWidth="3.5"
+            strokeLinejoin="round"
+          />
+          <circle cx="69" cy="60" r="4" fill="#E67E22" stroke="#3D312A" strokeWidth="2" />
+          <circle cx="69" cy="78" r="4" fill="#E67E22" stroke="#3D312A" strokeWidth="2" />
+          <path d="M98 72 Q103 66 106 72 Q109 66 114 72 Q109 76 106 74 Q103 76 98 72 Z" fill="#F2CC66" stroke="#3D312A" strokeWidth="1.5" />
         </g>
       )}
     </svg>

@@ -154,6 +154,10 @@ export const StickerMemoryGame: React.FC<Props> = ({ stickerMap, onComplete, onE
           </div>
         </div>
 
+        <div className="px-3.5 py-1.5 bg-[#FBF7F0] border-b border-[#D6C4AC] text-center text-[11px] sm:text-xs text-[#3D312A]">
+          <strong className="text-[#2F7D6D]">Goal:</strong> Click or tap 2 cards to match all 8 sticker pairs · Fewer moves earn bonus Coins
+        </div>
+
         <div className="p-3 sm:p-6 bg-[#FBF7F0]">
           <div className="grid grid-cols-4 gap-2 sm:gap-3">
             {cards.map((card) => {

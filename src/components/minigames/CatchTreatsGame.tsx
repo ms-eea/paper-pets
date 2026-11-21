@@ -118,7 +118,7 @@ export const CatchTreatsGame: React.FC<Props> = ({
       updatePointer(e.clientX);
     };
     const onPointerMove = (e: PointerEvent) => {
-      if (activePointerId === e.pointerId || (e.pointerType === 'mouse' && e.buttons > 0)) {
+      if (activePointerId === e.pointerId || e.pointerType === 'mouse') {
         updatePointer(e.clientX);
       }
     };
@@ -429,7 +429,7 @@ export const CatchTreatsGame: React.FC<Props> = ({
               Catch the Treats · {petName}
             </h3>
             <p className="text-[11px] sm:text-xs text-[#6E5D52]">
-              Drag anywhere, tap Left/Right, or use A/D · Dodge muddy boots
+              Move mouse cursor, use A/D, or drag/tap Left &amp; Right
             </p>
           </div>
 
@@ -474,6 +474,21 @@ export const CatchTreatsGame: React.FC<Props> = ({
           </div>
         </div>
 
+        {/* Always-Visible Compact Instructions Banner */}
+        <div className="px-3.5 py-1.5 bg-[#FBF7F0] border-b border-[#D6C4AC] flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-[11px] sm:text-xs text-[#3D312A] shrink-0">
+          <span>
+            <strong className="text-[#2F7D6D]">Catch:</strong> Apple +1 · Cupcake +2 · Star +4
+          </span>
+          <span aria-hidden="true" className="text-[#CEB99C]">|</span>
+          <span>
+            <strong className="text-[#B83B1D]">Dodge:</strong> Muddy Boot (-1 Life)
+          </span>
+          <span aria-hidden="true" className="text-[#CEB99C] hidden sm:inline">|</span>
+          <span className="text-[#6E5D52]">
+            <strong>Move:</strong> Hover mouse, A/D, or Touch
+          </span>
+        </div>
+
         {/* Isolated Canvas Viewport */}
         <div className="relative bg-[#DDEEF2] flex-1 min-h-0 flex items-center justify-center">
           <canvas
@@ -481,7 +496,7 @@ export const CatchTreatsGame: React.FC<Props> = ({
             width={W}
             height={H}
             data-paused={phase !== 'PLAYING' ? 'true' : 'false'}
-            className="w-full h-auto block touch-none"
+            className="w-full h-auto block touch-none md:cursor-ew-resize"
           />
 
           {phase === 'PAUSED' && (

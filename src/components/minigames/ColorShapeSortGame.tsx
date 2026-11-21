@@ -203,6 +203,10 @@ export const ColorShapeSortGame: React.FC<Props> = ({ onComplete, onExit }) => {
           </div>
         </div>
 
+        <div className="px-3.5 py-1.5 bg-[#FBF7F0] border-b border-[#D6C4AC] text-center text-[11px] sm:text-xs text-[#3D312A]">
+          <strong className="text-[#2F7D6D]">Goal:</strong> Click a matching bin (or press 1–4) before time ends · Rule swaps Color &harr; Shape every 6 sorts
+        </div>
+
         <div className="p-4 sm:p-6 bg-[#FBF7F0] space-y-4 sm:space-y-5">
           {/* Active Rule Banner */}
           <div className="flex items-center justify-between paper-card-kraft rounded-xl px-4 py-2.5">

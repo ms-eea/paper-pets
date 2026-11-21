@@ -100,12 +100,14 @@ export default function App() {
         } else if (activeDrawer !== 'none') {
           setActiveDrawer('none');
           setSelectedDecoId(null);
+        } else if (selectedDecoId) {
+          setSelectedDecoId(null);
         }
       }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [screen, activeDrawer, photoMode]);
+  }, [screen, activeDrawer, photoMode, selectedDecoId]);
 
   // Briefly show and fade out Photo Mode instructions so screenshots stay spotless
   useEffect(() => {
@@ -380,7 +382,10 @@ export default function App() {
               muted={data.muted}
               hasUnsavedRoomChanges={hasUnsavedRoomChanges}
               lastRoomSaveAt={data.lastRoomSaveAt}
-              onSelectBackground={selectBackground}
+              onSelectBackground={(bgId) => {
+                selectBackground(bgId);
+                setSelectedDecoId(null);
+              }}
               onChangeTimeOfDay={(time) => setRoomTimeOfDay(data.activeBackgroundId, time)}
               onOpenPets={() => handleToggleDrawer(activeDrawer === 'pets' ? 'none' : 'pets')}
               onOpenCheckIn={() => handleToggleDrawer(activeDrawer === 'checkin' ? 'none' : 'checkin')}

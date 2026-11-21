@@ -35,7 +35,7 @@ export const FeedTray: React.FC<Props> = ({ treatCounts, onFeed, onOpenShop, onC
           <p className="text-xs text-[#6E5D52]">Pick a paper treat to feed your pet</p>
         </div>
         <div className="flex flex-wrap items-center gap-1.5">
-          <div className="flex items-center gap-1 bg-[#F3EBDD] p-0.5 rounded-lg border border-[#D6C4AC]">
+          <div className="flex flex-wrap items-center gap-1 bg-[#F3EBDD] p-0.5 rounded-lg border border-[#D6C4AC]">
             <button
               type="button"
               onClick={() => setSubFilter('all')}

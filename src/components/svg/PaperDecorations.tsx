@@ -1085,6 +1085,263 @@ export const PaperDecorationSvg: React.FC<Props> = ({ itemId, className = 'w-ful
         </svg>
       );
 
+    case 'deco_heart_garland':
+      return (
+        <svg viewBox="0 0 160 80" className={className}>
+          <path d="M8 18 Q80 42 152 18" fill="none" stroke="#8C6742" strokeWidth="3" strokeLinecap="round" />
+          {[
+            { cx: 26, cy: 31, fill: '#D95D39' },
+            { cx: 53, cy: 38, fill: '#E89EB0' },
+            { cx: 80, cy: 41, fill: '#C85C7D' },
+            { cx: 107, cy: 38, fill: '#E89EB0' },
+            { cx: 134, cy: 31, fill: '#D95D39' },
+          ].map((h) => (
+            <path
+              key={h.cx}
+              d={`M${h.cx} ${h.cy + 14} C${h.cx - 14} ${h.cy + 4} ${h.cx - 14} ${h.cy - 9} ${h.cx - 6} ${h.cy - 9} C${h.cx - 2} ${h.cy - 9} ${h.cx} ${h.cy - 5} ${h.cx} ${h.cy - 3} C${h.cx} ${h.cy - 5} ${h.cx + 2} ${h.cy - 9} ${h.cx + 6} ${h.cy - 9} C${h.cx + 14} ${h.cy - 9} ${h.cx + 14} ${h.cy + 4} ${h.cx} ${h.cy + 14} Z`}
+              fill={h.fill}
+              stroke="#FFFDF8"
+              strokeWidth="2.5"
+              strokeLinejoin="round"
+            />
+          ))}
+        </svg>
+      );
+    case 'deco_valentine_letters':
+      return (
+        <svg viewBox="0 0 125 100" className={className}>
+          <g transform="rotate(-6 62 66)">
+            <rect x="20" y="50" width="84" height="36" rx="5" fill="#F4C7D2" stroke="#FFFDF8" strokeWidth="2.5" />
+            <path d="M22 52 L62 72 L102 52" fill="none" stroke="#C85C7D" strokeWidth="2.5" />
+          </g>
+          <g transform="rotate(4 62 46)">
+            <rect x="22" y="28" width="82" height="44" rx="5" fill="#FFFDF8" stroke="#D6C4AC" strokeWidth="2.5" />
+            <path d="M24 30 L63 54 L102 30" fill="#FBE8ED" stroke="#C85C7D" strokeWidth="2.2" strokeLinejoin="round" />
+            <path
+              d="M63 60 C55 54 55 46 59 46 C61.5 46 63 48.5 63 49.5 C63 48.5 64.5 46 67 46 C71 46 71 54 63 60 Z"
+              fill="#D95D39"
+              stroke="#FFFDF8"
+              strokeWidth="1.5"
+            />
+            <rect x="82" y="34" width="12" height="10" rx="2" fill="#E09F3E" opacity="0.85" />
+          </g>
+        </svg>
+      );
+    case 'deco_christmas_tree':
+      return (
+        <svg viewBox="0 0 140 165" className={className}>
+          <rect x="60" y="126" width="20" height="24" rx="3" fill="#7E5732" stroke="#FFFDF8" strokeWidth="2.5" />
+          <polygon points="22,128 118,128 70,74" fill="#2F7D6D" stroke="#FFFDF8" strokeWidth="3" strokeLinejoin="round" />
+          <polygon points="30,96 110,96 70,48" fill="#3B8A77" stroke="#FFFDF8" strokeWidth="3" strokeLinejoin="round" />
+          <polygon points="40,66 100,66 70,24" fill="#4A9D86" stroke="#FFFDF8" strokeWidth="3" strokeLinejoin="round" />
+          <polygon
+            points="70,8 74,18 85,18 76,24 79,34 70,28 61,34 64,24 55,18 66,18"
+            fill="#F2CC66"
+            stroke="#FFFDF8"
+            strokeWidth="2"
+            strokeLinejoin="round"
+          />
+          <circle cx="56" cy="56" r="4.5" fill="#D95D39" stroke="#FFFDF8" strokeWidth="1.5" />
+          <circle cx="84" cy="60" r="4.5" fill="#F2CC66" stroke="#FFFDF8" strokeWidth="1.5" />
+          <circle cx="48" cy="88" r="5" fill="#E89EB0" stroke="#FFFDF8" strokeWidth="1.5" />
+          <circle cx="74" cy="82" r="5" fill="#F2CC66" stroke="#FFFDF8" strokeWidth="1.5" />
+          <circle cx="92" cy="90" r="4.5" fill="#D95D39" stroke="#FFFDF8" strokeWidth="1.5" />
+          <circle cx="42" cy="116" r="5" fill="#F2CC66" stroke="#FFFDF8" strokeWidth="1.5" />
+          <circle cx="68" cy="112" r="5" fill="#D95D39" stroke="#FFFDF8" strokeWidth="1.5" />
+          <circle cx="96" cy="116" r="5" fill="#4C8DAE" stroke="#FFFDF8" strokeWidth="1.5" />
+          <rect x="26" y="132" width="24" height="20" rx="3" fill="#D95D39" stroke="#FFFDF8" strokeWidth="2" />
+          <line x1="38" y1="132" x2="38" y2="152" stroke="#F2CC66" strokeWidth="3.5" />
+        </svg>
+      );
+    case 'deco_holiday_stockings':
+      return (
+        <svg viewBox="0 0 155 125" className={className}>
+          <rect x="14" y="18" width="127" height="12" rx="5" fill="#9E6E44" stroke="#FFFDF8" strokeWidth="2.5" />
+          {/* Left stocking */}
+          <path
+            d="M34 30 H58 V66 C58 76 42 84 32 76 C24 70 28 58 34 54 Z"
+            fill="#C94A38"
+            stroke="#FFFDF8"
+            strokeWidth="2.5"
+            strokeLinejoin="round"
+          />
+          <rect x="31" y="28" width="30" height="11" rx="4" fill="#FFFDF8" stroke="#D6C4AC" strokeWidth="2" />
+          {/* Right stocking */}
+          <path
+            d="M96 30 H120 V66 C120 76 104 84 94 76 C86 70 90 58 96 54 Z"
+            fill="#2F7D6D"
+            stroke="#FFFDF8"
+            strokeWidth="2.5"
+            strokeLinejoin="round"
+          />
+          <rect x="93" y="28" width="30" height="11" rx="4" fill="#FFFDF8" stroke="#D6C4AC" strokeWidth="2" />
+          {/* Gift boxes */}
+          <rect x="44" y="84" width="34" height="28" rx="4" fill="#E09F3E" stroke="#FFFDF8" strokeWidth="2.5" />
+          <line x1="61" y1="84" x2="61" y2="112" stroke="#C94A38" strokeWidth="4" />
+          <rect x="82" y="90" width="28" height="22" rx="4" fill="#4C8DAE" stroke="#FFFDF8" strokeWidth="2.5" />
+          <line x1="96" y1="90" x2="96" y2="112" stroke="#F2CC66" strokeWidth="3.5" />
+        </svg>
+      );
+    case 'deco_new_year_clock':
+      return (
+        <svg viewBox="0 0 155 110" className={className}>
+          <path d="M12 22 Q77 44 143 22" fill="none" stroke="#E09F3E" strokeWidth="3" strokeLinecap="round" />
+          <polygon points="18,24 38,30 24,48" fill="#355C8A" stroke="#FFFDF8" strokeWidth="2" />
+          <polygon points="42,30 62,33 50,52" fill="#F2CC66" stroke="#FFFDF8" strokeWidth="2" />
+          <polygon points="93,33 113,30 105,52" fill="#F2CC66" stroke="#FFFDF8" strokeWidth="2" />
+          <polygon points="117,30 137,24 131,48" fill="#355C8A" stroke="#FFFDF8" strokeWidth="2" />
+          <circle cx="77.5" cy="54" r="28" fill="#324364" stroke="#F2CC66" strokeWidth="4" />
+          <circle cx="77.5" cy="54" r="21" fill="#FFFDF8" />
+          <line x1="77.5" y1="54" x2="77.5" y2="39" stroke="#3D312A" strokeWidth="3" strokeLinecap="round" />
+          <line x1="77.5" y1="54" x2="83" y2="41" stroke="#D95D39" strokeWidth="2.5" strokeLinecap="round" />
+          <circle cx="77.5" cy="54" r="3" fill="#D95D39" />
+          <polygon points="28,72 31,79 38,80 32,85 34,92 28,88 22,92 24,85 18,80 25,79" fill="#F2CC66" stroke="#FFFDF8" strokeWidth="1.5" />
+          <polygon points="127,72 130,79 137,80 131,85 133,92 127,88 121,92 123,85 117,80 124,79" fill="#E89EB0" stroke="#FFFDF8" strokeWidth="1.5" />
+        </svg>
+      );
+    case 'deco_thanksgiving_cornucopia':
+      return (
+        <svg viewBox="0 0 145 105" className={className}>
+          <path
+            d="M36 74 C24 52 52 24 94 34 L122 24 C112 52 96 84 62 84 C48 84 40 80 36 74 Z"
+            fill="#B88652"
+            stroke="#FFFDF8"
+            strokeWidth="3"
+            strokeLinejoin="round"
+          />
+          <path d="M52 72 Q68 50 86 38 M66 78 Q82 58 98 42" fill="none" stroke="#8C6136" strokeWidth="2.5" />
+          <ellipse cx="40" cy="70" rx="16" ry="14" fill="#D95D39" stroke="#FFFDF8" strokeWidth="2.5" />
+          <rect x="38" y="52" width="4" height="7" rx="1.5" fill="#4F6D45" />
+          <circle cx="24" cy="78" r="9" fill="#C94A38" stroke="#FFFDF8" strokeWidth="2" />
+          <ellipse cx="56" cy="56" rx="10" ry="15" transform="rotate(-30 56 56)" fill="#F2CC66" stroke="#FFFDF8" strokeWidth="2" />
+          <polygon points="18,62 28,54 34,64 24,70" fill="#E07A3F" stroke="#FFFDF8" strokeWidth="1.5" />
+        </svg>
+      );
+    case 'deco_july4_bunting':
+      return (
+        <svg viewBox="0 0 160 95" className={className}>
+          <path d="M18 20 A62 62 0 0 0 142 20 Z" fill="#C94A38" stroke="#FFFDF8" strokeWidth="3" />
+          <path d="M36 20 A44 44 0 0 0 124 20 Z" fill="#FFFDF8" />
+          <path d="M54 20 A26 26 0 0 0 106 20 Z" fill="#355C8A" />
+          <polygon points="80,24 83,31 90,31 84,35 86,42 80,38 74,42 76,35 70,31 77,31" fill="#FFFDF8" />
+          <circle cx="52" cy="48" r="3" fill="#355C8A" />
+          <circle cx="108" cy="48" r="3" fill="#355C8A" />
+          <circle cx="80" cy="56" r="3" fill="#355C8A" />
+        </svg>
+      );
+    case 'deco_july4_fireworks':
+      return (
+        <svg viewBox="0 0 150 135" className={className}>
+          {/* Big Coral-Red Burst */}
+          {[0, 30, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330].map((deg) => (
+            <line
+              key={`r_${deg}`}
+              x1="56"
+              y1="52"
+              x2={56 + Math.cos((deg * Math.PI) / 180) * 34}
+              y2={52 + Math.sin((deg * Math.PI) / 180) * 34}
+              stroke={deg % 60 === 0 ? '#D95D39' : '#FFFDF8'}
+              strokeWidth="3.2"
+              strokeLinecap="round"
+              strokeDasharray={deg % 60 === 0 ? undefined : '4 5'}
+            />
+          ))}
+          <circle cx="56" cy="52" r="7" fill="#F2CC66" stroke="#FFFDF8" strokeWidth="2" />
+          {/* Right Blue & Gold Burst */}
+          {[0, 45, 90, 135, 180, 225, 270, 315].map((deg) => (
+            <line
+              key={`b_${deg}`}
+              x1="108"
+              y1="72"
+              x2={108 + Math.cos((deg * Math.PI) / 180) * 26}
+              y2={72 + Math.sin((deg * Math.PI) / 180) * 26}
+              stroke={deg % 90 === 0 ? '#4C8DAE' : '#F2CC66'}
+              strokeWidth="3"
+              strokeLinecap="round"
+            />
+          ))}
+          <circle cx="108" cy="72" r="5.5" fill="#FFFDF8" />
+          <polygon points="84,18 87,25 94,25 88,29 90,36 84,32 78,36 80,29 74,25 81,25" fill="#F2CC66" stroke="#FFFDF8" strokeWidth="1.5" />
+        </svg>
+      );
+    case 'deco_halloween_jackolantern':
+      return (
+        <svg viewBox="0 0 130 115" className={className}>
+          <path d="M62 24 C62 14 70 12 73 16" fill="none" stroke="#4F6D45" strokeWidth="6" strokeLinecap="round" />
+          <ellipse cx="64" cy="66" rx="40" ry="33" fill="#E67E22" stroke="#FFFDF8" strokeWidth="3.5" />
+          <ellipse cx="64" cy="66" rx="22" ry="32" fill="#EE8D33" />
+          <polygon points="46,52 56,58 44,62" fill="#FBE594" />
+          <polygon points="82,52 72,58 84,62" fill="#FBE594" />
+          <polygon points="61,67 67,67 64,61" fill="#FBE594" />
+          <path d="M44 76 Q64 90 84 76 L79 84 L73 79 L64 86 L55 79 L49 84 Z" fill="#FBE594" />
+          <ellipse cx="104" cy="84" rx="15" ry="12" fill="#D95D39" stroke="#FFFDF8" strokeWidth="2.5" />
+          <rect x="102" y="68" width="4" height="6" rx="1.5" fill="#4F6D45" />
+        </svg>
+      );
+    case 'deco_halloween_ghost':
+      return (
+        <svg viewBox="0 0 130 120" className={className}>
+          {/* Tiny Bats */}
+          <path d="M22 30 Q30 22 34 30 Q38 22 46 30 Q38 35 34 33 Q30 35 22 30 Z" fill="#463830" stroke="#FFFDF8" strokeWidth="1.5" />
+          <path d="M88 26 Q95 19 99 26 Q103 19 110 26 Q103 31 99 29 Q95 31 88 26 Z" fill="#463830" stroke="#FFFDF8" strokeWidth="1.5" />
+          {/* Friendly Sheet Ghost */}
+          <path
+            d="M42 96 V56 C42 30 88 30 88 56 V96 L78 88 L68 96 L58 88 L48 96 Z"
+            fill="#FFFDF8"
+            stroke="#D6C4AC"
+            strokeWidth="3"
+            strokeLinejoin="round"
+          />
+          <circle cx="56" cy="54" r="4" fill="#3D312A" />
+          <circle cx="74" cy="54" r="4" fill="#3D312A" />
+          <circle cx="50" cy="61" r="4" fill="#F4A9BE" opacity="0.85" />
+          <circle cx="80" cy="61" r="4" fill="#F4A9BE" opacity="0.85" />
+          <ellipse cx="65" cy="63" rx="3.5" ry="4.5" fill="#3D312A" />
+        </svg>
+      );
+    case 'deco_harvest_wreath':
+      return (
+        <svg viewBox="0 0 120 120" className={className}>
+          <circle cx="60" cy="58" r="36" fill="none" stroke="#8C6136" strokeWidth="14" />
+          {[0, 45, 90, 135, 180, 225, 270, 315].map((deg, idx) => (
+            <circle
+              key={deg}
+              cx={60 + Math.cos((deg * Math.PI) / 180) * 36}
+              cy={58 + Math.sin((deg * Math.PI) / 180) * 36}
+              r="11"
+              fill={idx % 3 === 0 ? '#D95D39' : idx % 3 === 1 ? '#E09F3E' : '#C94A38'}
+              stroke="#FFFDF8"
+              strokeWidth="2"
+            />
+          ))}
+          <path d="M60 92 L44 108 L54 96 L60 92 L66 96 L76 108 Z" fill="#C94A38" stroke="#FFFDF8" strokeWidth="2" />
+          <circle cx="60" cy="92" r="6" fill="#E09F3E" stroke="#FFFDF8" strokeWidth="2" />
+        </svg>
+      );
+    case 'deco_holiday_snowman':
+      return (
+        <svg viewBox="0 0 120 140" className={className}>
+          <line x1="34" y1="74" x2="14" y2="58" stroke="#7E5732" strokeWidth="4.5" strokeLinecap="round" />
+          <line x1="86" y1="74" x2="106" y2="58" stroke="#7E5732" strokeWidth="4.5" strokeLinecap="round" />
+          <circle cx="60" cy="100" r="28" fill="#FFFDF8" stroke="#D6C4AC" strokeWidth="3" />
+          <circle cx="60" cy="64" r="21" fill="#FFFDF8" stroke="#D6C4AC" strokeWidth="3" />
+          <circle cx="60" cy="36" r="16" fill="#FFFDF8" stroke="#D6C4AC" strokeWidth="3" />
+          {/* Scarf */}
+          <rect x="42" y="48" width="36" height="9" rx="4" fill="#C94A38" stroke="#FFFDF8" strokeWidth="1.5" />
+          <rect x="66" y="54" width="9" height="18" rx="3" fill="#C94A38" stroke="#FFFDF8" strokeWidth="1.5" />
+          {/* Face & Buttons */}
+          <circle cx="54" cy="34" r="2.2" fill="#3D312A" />
+          <circle cx="66" cy="34" r="2.2" fill="#3D312A" />
+          <polygon points="60,36 74,39 60,42" fill="#E67E22" />
+          <circle cx="60" cy="64" r="2.5" fill="#3D312A" />
+          <circle cx="60" cy="74" r="2.5" fill="#3D312A" />
+          {/* Top Hat */}
+          <rect x="40" y="21" width="40" height="5" rx="2" fill="#3D312A" />
+          <rect x="46" y="7" width="28" height="15" rx="3" fill="#3D312A" />
+          <rect x="46" y="17" width="28" height="4" fill="#2F7D6D" />
+        </svg>
+      );
+
     default:
       return (
         <svg viewBox="0 0 100 100" className={className}>

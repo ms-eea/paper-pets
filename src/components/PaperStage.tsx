@@ -147,19 +147,17 @@ export const PaperStage: React.FC<Props> = ({
   const renderDecoration = (deco: PlacedDecoration) => {
     const def = DECORATION_CATALOG.find((d) => d.id === deco.itemId);
     const basePx = Math.round((def?.baseSizePx ?? 100) * propViewportFactor);
-    const canDragAnytime = !photoMode;
+    const canInteractAnytime = !photoMode;
     const isDraggingThis = dragState?.id === deco.instanceId;
-    const isSelected = decorateMode && selectedDecoId === deco.instanceId;
+    const isSelected = canInteractAnytime && selectedDecoId === deco.instanceId;
 
     return (
       <div
         key={deco.instanceId}
         onPointerDown={(e) => {
-          if (!canDragAnytime) return;
+          if (!canInteractAnytime) return;
           e.stopPropagation();
-          if (decorateMode) {
-            onSelectDeco(deco.instanceId);
-          }
+          onSelectDeco(deco.instanceId);
           setDragState({
             mode: 'move',
             id: deco.instanceId,
@@ -170,9 +168,13 @@ export const PaperStage: React.FC<Props> = ({
             origY: deco.y,
           });
         }}
-        title={canDragAnytime && !decorateMode ? `Drag to move ${def?.name || 'decoration'}` : undefined}
+        title={
+          canInteractAnytime && !decorateMode
+            ? `Click ${def?.name || 'decoration'} to remove or drag to move`
+            : undefined
+        }
         className={`absolute select-none touch-none ${
-          canDragAnytime ? 'cursor-grab active:cursor-grabbing' : 'pointer-events-none'
+          canInteractAnytime ? 'cursor-grab active:cursor-grabbing' : 'pointer-events-none'
         }`}
         style={{
           left: `${deco.x}%`,
@@ -187,7 +189,7 @@ export const PaperStage: React.FC<Props> = ({
           className={`w-full h-full sticker-shadow transition-shadow duration-150 rounded-xl ${
             isSelected
               ? 'ring-2 ring-[#D95D39] ring-offset-2 ring-offset-transparent'
-              : canDragAnytime && !decorateMode
+              : canInteractAnytime && !decorateMode
                 ? 'hover:ring-2 hover:ring-[#D95D39]/40'
                 : ''
           }`}
@@ -196,8 +198,8 @@ export const PaperStage: React.FC<Props> = ({
           <PaperDecorationSvg itemId={deco.itemId} />
         </div>
 
-        {/* Quick X Remove Badge on Item in Decorate Mode (enlarged touch target on mobile) */}
-        {decorateMode && (
+        {/* Corner X Remove Button when clicked/selected (works in normal play and Decorate mode) */}
+        {isSelected && (
           <button
             type="button"
             title={`Remove ${def?.name || 'decoration'}`}
@@ -214,8 +216,8 @@ export const PaperStage: React.FC<Props> = ({
           </button>
         )}
 
-        {/* Selected Prop Controls (enlarged touch hitboxes on mobile) */}
-        {isSelected && (
+        {/* Decorate-mode Resize, Depth & Flip Controls */}
+        {isSelected && decorateMode && (
           <>
             <button
               type="button"
@@ -294,7 +296,7 @@ export const PaperStage: React.FC<Props> = ({
     <div
       ref={stageRef}
       onPointerDown={() => {
-        if (decorateMode) onSelectDeco(null);
+        if (!photoMode) onSelectDeco(null);
       }}
       className="relative w-full h-full overflow-hidden touch-pan-x touch-pan-y"
     >
