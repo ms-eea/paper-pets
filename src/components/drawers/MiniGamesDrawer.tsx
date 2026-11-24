@@ -40,7 +40,7 @@ const GAMES: {
 
 export const MiniGamesDrawer: React.FC<Props> = ({ highScores, onLaunchGame, onClose }) => {
   return (
-    <aside className="fixed inset-x-0 bottom-[calc(60px+env(safe-area-inset-bottom))] sm:bottom-20 md:inset-x-auto md:right-5 md:top-24 md:bottom-24 z-30 h-[48dvh] max-h-[54dvh] md:h-auto md:max-h-none md:w-[368px] paper-card rounded-t-2xl md:rounded-2xl flex flex-col overflow-hidden">
+    <aside className="fixed inset-x-0 bottom-[calc(62px+env(safe-area-inset-bottom))] sm:bottom-[72px] md:inset-x-auto md:right-5 md:top-24 md:bottom-24 z-30 h-[45dvh] max-h-[48dvh] md:h-auto md:max-h-none md:w-[368px] paper-card rounded-t-2xl md:rounded-2xl flex flex-col overflow-hidden">
       <div className="md:hidden w-10 h-1 rounded-full bg-[#CEB99C] mx-auto mt-2 mb-0.5 shrink-0" />
       <div className="px-4 py-2.5 md:py-3 border-b border-[#D6C4AC] bg-[#F3EBDD] flex items-center justify-between">
         <div>

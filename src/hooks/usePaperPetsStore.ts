@@ -33,7 +33,7 @@ import { sound } from '../utils/sound';
 // Gentle decay: ~0.45 points per minute (~27 points per hour), floored at 10
 const DECAY_PER_MS = 0.45 / 60000;
 const MIN_METER = 10;
-const CLOTHING_SLOTS: ClothingSlot[] = ['hat', 'eyewear', 'neckwear', 'top'];
+const CLOTHING_SLOTS: ClothingSlot[] = ['hat', 'eyewear', 'neckwear', 'top', 'wings', 'handheld'];
 
 function persistSaveSync(next: PaperPetsSaveData) {
   try {
@@ -139,25 +139,42 @@ function loadAndNormalizeSave(): { save: PaperPetsSaveData; awaySummary: AwaySum
       hydratedCheckIn.streak = 0;
     }
 
-    const rawRoomDecorations = {
+    const normalizeDecoListForPanorama = (list: PlacedDecoration[]) =>
+      list.map((d) => ({
+        ...d,
+        x: Math.round((25 + Math.min(97, Math.max(3, d.x)) * 0.5) * 10) / 10,
+      }));
+
+    const needsPanoramicMigration = parsed.panoramicNormalized !== true;
+
+    const mergedRooms: Record<BackgroundId, PlacedDecoration[]> = {
       ...initial.roomDecorations,
-      ...(parsed.roomDecorations || {}),
     };
 
-    // Unstick legacy Outdoor Meadow starter bunting (init_m_2) and keep starter sky props clear of TopHud
-    if (Array.isArray(rawRoomDecorations.meadow)) {
-      rawRoomDecorations.meadow = rawRoomDecorations.meadow
-        .filter((d) => !(d.instanceId === 'init_m_2' && d.itemId === 'deco_bunting'))
-        .map((d) => {
-          if (d.instanceId === 'init_m_sun' && d.y < 24) {
-            return { ...d, x: Math.max(20, d.x), y: 26 };
-          }
-          if (d.instanceId === 'init_m_cloud' && d.y < 23) {
-            return { ...d, y: 24 };
-          }
-          return d;
-        });
+    if (parsed.roomDecorations && typeof parsed.roomDecorations === 'object') {
+      for (const [bgKey, list] of Object.entries(parsed.roomDecorations)) {
+        if (!Array.isArray(list)) continue;
+        let nextList = list;
+        if (bgKey === 'meadow') {
+          nextList = nextList
+            .filter((d) => !(d.instanceId === 'init_m_2' && d.itemId === 'deco_bunting'))
+            .map((d) => {
+              if (d.instanceId === 'init_m_sun' && d.y < 24) {
+                return { ...d, x: Math.max(20, d.x), y: 26 };
+              }
+              if (d.instanceId === 'init_m_cloud' && d.y < 23) {
+                return { ...d, y: 24 };
+              }
+              return d;
+            });
+        }
+        mergedRooms[bgKey as BackgroundId] = needsPanoramicMigration
+          ? normalizeDecoListForPanorama(nextList)
+          : nextList;
+      }
     }
+
+    const rawRoomDecorations = mergedRooms;
 
     const rawOutfits = { ...initial.outfits, ...(parsed.outfits || {}) };
     const normalizedOutfits: Record<PetId, PetOutfit> = {
@@ -205,7 +222,15 @@ function loadAndNormalizeSave(): { save: PaperPetsSaveData; awaySummary: AwaySum
         ...DEFAULT_ROOM_TIME_OF_DAY,
         ...(parsed.roomTimeOfDay || {}),
       },
-      savedRoomSlots: Array.isArray(parsed.savedRoomSlots) ? parsed.savedRoomSlots : [],
+      savedRoomSlots: Array.isArray(parsed.savedRoomSlots)
+        ? parsed.savedRoomSlots.map((slot) => ({
+            ...slot,
+            decorations: needsPanoramicMigration
+              ? normalizeDecoListForPanorama(slot.decorations || [])
+              : slot.decorations || [],
+          }))
+        : [],
+      panoramicNormalized: true,
       lastRoomSaveAt: parsed.lastRoomSaveAt || parsed.lastSavedAt || initial.lastRoomSaveAt,
       lastOutfitSaveAt: parsed.lastOutfitSaveAt || parsed.lastSavedAt || initial.lastOutfitSaveAt,
       highScores: { ...initial.highScores, ...(parsed.highScores || {}) },
@@ -526,7 +551,7 @@ export function usePaperPetsStore(pauseDecay: boolean) {
     [],
   );
 
-  const addPlacedDecoration = useCallback((itemId: string): string => {
+  const addPlacedDecoration = useCallback((itemId: string, targetCenterX = 50): string => {
     const def = DECORATION_CATALOG.find((d) => d.id === itemId);
     const id = `dec_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
     sound.playPop();
@@ -534,12 +559,12 @@ export function usePaperPetsStore(pauseDecay: boolean) {
     setData((prev) => {
       const bgId = prev.activeBackgroundId;
       const list = prev.roomDecorations[bgId] || [];
-      const offset = (list.length % 5) * 4 - 8;
+      const offset = (list.length % 5) * 3 - 6;
       const newDeco: PlacedDecoration = {
         instanceId: id,
         itemId,
-        x: Math.min(82, Math.max(18, 50 + offset)),
-        y: Math.min(80, Math.max(24, 62 + (list.length % 3) * 5)),
+        x: Math.min(92, Math.max(8, Math.round((targetCenterX + offset) * 10) / 10)),
+        y: Math.min(80, Math.max(24, 60 + (list.length % 3) * 5)),
         scale: def?.defaultScale ?? 1.0,
         zLayer: 'back',
         flipped: false,
@@ -695,7 +720,7 @@ export function usePaperPetsStore(pauseDecay: boolean) {
   );
 
   const buyAndPlaceDecoration = useCallback(
-    (itemId: string): string | null => {
+    (itemId: string, targetCenterX = 50): string | null => {
       const deco = DECORATION_CATALOG.find((d) => d.id === itemId);
       if (!deco) return null;
       const alreadyUnlocked = data.unlockedDecorationIds.includes(itemId);
@@ -712,12 +737,12 @@ export function usePaperPetsStore(pauseDecay: boolean) {
       setData((prev) => {
         const bgId = prev.activeBackgroundId;
         const list = prev.roomDecorations[bgId] || [];
-        const offset = (list.length % 5) * 4 - 8;
+        const offset = (list.length % 5) * 3 - 6;
         const newDeco: PlacedDecoration = {
           instanceId,
           itemId,
-          x: Math.min(82, Math.max(18, 50 + offset)),
-          y: Math.min(80, Math.max(24, 62 + (list.length % 3) * 5)),
+          x: Math.min(92, Math.max(8, Math.round((targetCenterX + offset) * 10) / 10)),
+          y: Math.min(80, Math.max(24, 60 + (list.length % 3) * 5)),
           scale: deco.defaultScale ?? 1.0,
           zLayer: 'back',
           flipped: false,

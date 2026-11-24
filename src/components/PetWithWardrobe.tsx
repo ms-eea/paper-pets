@@ -19,7 +19,8 @@ interface Props {
   className?: string;
 }
 
-const LAYER_ORDER: ClothingSlot[] = ['top', 'neckwear', 'eyewear', 'hat'];
+const BACK_LAYER_ORDER: ClothingSlot[] = ['wings'];
+const FRONT_LAYER_ORDER: ClothingSlot[] = ['top', 'neckwear', 'eyewear', 'hat', 'handheld'];
 
 const TRICK_CLASS_BY_PET: Record<PetId, string> = {
   rawr: 'animate-trick-rawr',
@@ -55,6 +56,57 @@ export const PetWithWardrobe: React.FC<Props> = ({
         ? 'animate-gentle-bob'
         : '';
 
+  const renderSlotLayer = (slot: ClothingSlot) => {
+    const equipped = outfit[slot];
+    if (!equipped) return null;
+    const anchor = pet.anchors[slot];
+    if (!anchor) return null;
+    const leftPct = anchor.x + (equipped.nudgeX ?? 0);
+    const topPct = anchor.y + (equipped.nudgeY ?? 0);
+    const slotScale = anchor.scale * (equipped.nudgeScale ?? 1);
+    const baseWidthPct =
+      slot === 'wings'
+        ? 86
+        : slot === 'top'
+          ? 54
+          : slot === 'hat'
+            ? 46
+            : slot === 'handheld'
+              ? 38
+              : 44;
+    const rot = anchor.rotate ?? 0;
+    const isSelected = interactiveGarments && selectedGarmentSlot === slot;
+
+    return (
+      <div
+        key={slot}
+        className="absolute pointer-events-none sticker-shadow transition-[filter] duration-150"
+        style={{
+          left: `${leftPct}%`,
+          top: `${topPct}%`,
+          width: `${baseWidthPct}%`,
+          aspectRatio: '4 / 3',
+          transform: `translate(-50%, -50%) scale(${slotScale}) rotate(${rot}deg)`,
+          filter: isSelected
+            ? 'drop-shadow(0 0 5px #D95D39) drop-shadow(0 3px 6px rgba(61, 49, 42, 0.28))'
+            : undefined,
+        }}
+      >
+        <GarmentSvg
+          itemId={equipped.itemId}
+          colorHex={equipped.colorHex}
+          patternId={equipped.patternId}
+          interactive={interactiveGarments}
+          onSelect={
+            interactiveGarments && onSelectGarment
+              ? () => onSelectGarment(slot)
+              : undefined
+          }
+        />
+      </div>
+    );
+  };
+
   return (
     <div
       onClick={onClick}
@@ -67,6 +119,9 @@ export const PetWithWardrobe: React.FC<Props> = ({
         style={{ filter: 'blur(4px)' }}
       />
 
+      {/* Back Layer (Wings & Capes Behind Pet) */}
+      {BACK_LAYER_ORDER.map(renderSlotLayer)}
+
       {/* Processed Procreate Animal Sticker */}
       <img
         src={imgSrc}
@@ -76,47 +131,8 @@ export const PetWithWardrobe: React.FC<Props> = ({
         className="w-full h-full object-contain sticker-shadow pointer-events-none"
       />
 
-      {/* Layered Wardrobe Overlay (top -> neckwear -> eyewear -> hat) */}
-      {LAYER_ORDER.map((slot) => {
-        const equipped = outfit[slot];
-        if (!equipped) return null;
-        const anchor = pet.anchors[slot];
-        const leftPct = anchor.x + (equipped.nudgeX ?? 0);
-        const topPct = anchor.y + (equipped.nudgeY ?? 0);
-        const slotScale = anchor.scale * (equipped.nudgeScale ?? 1);
-        const baseWidthPct = slot === 'top' ? 54 : slot === 'hat' ? 46 : 44;
-        const rot = anchor.rotate ?? 0;
-        const isSelected = interactiveGarments && selectedGarmentSlot === slot;
-
-        return (
-          <div
-            key={slot}
-            className="absolute pointer-events-none sticker-shadow transition-[filter] duration-150"
-            style={{
-              left: `${leftPct}%`,
-              top: `${topPct}%`,
-              width: `${baseWidthPct}%`,
-              aspectRatio: '4 / 3',
-              transform: `translate(-50%, -50%) scale(${slotScale}) rotate(${rot}deg)`,
-              filter: isSelected
-                ? 'drop-shadow(0 0 5px #D95D39) drop-shadow(0 3px 6px rgba(61, 49, 42, 0.28))'
-                : undefined,
-            }}
-          >
-            <GarmentSvg
-              itemId={equipped.itemId}
-              colorHex={equipped.colorHex}
-              patternId={equipped.patternId}
-              interactive={interactiveGarments}
-              onSelect={
-                interactiveGarments && onSelectGarment
-                  ? () => onSelectGarment(slot)
-                  : undefined
-              }
-            />
-          </div>
-        );
-      })}
+      {/* Front Layered Wardrobe Overlay (top -> neckwear -> eyewear -> hat -> handheld) */}
+      {FRONT_LAYER_ORDER.map(renderSlotLayer)}
 
       {/* Species Signature Trick Cut-Paper VFX */}
       {trickActive && <PetTrickVfx petId={petId} />}

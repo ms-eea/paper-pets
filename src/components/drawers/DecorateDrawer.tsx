@@ -35,6 +35,7 @@ import {
   TimeOfDay,
 } from '../../types/game';
 import { PaperDecorationSvg } from '../svg/PaperDecorations';
+import { ResponsiveDrawerShell } from './ResponsiveDrawerShell';
 
 interface Props {
   coins: number;
@@ -61,6 +62,8 @@ interface Props {
   onUpdateSelected: (patch: Partial<PlacedDecoration>) => void;
   onRemoveSelected: () => void;
   onOpenPropsShop: () => void;
+  mobileCollapsed: boolean;
+  onSetMobileCollapsed: (collapsed: boolean) => void;
   onClose: () => void;
 }
 
@@ -96,6 +99,8 @@ export const DecorateDrawer: React.FC<Props> = ({
   onUpdateSelected,
   onRemoveSelected,
   onOpenPropsShop,
+  mobileCollapsed,
+  onSetMobileCollapsed,
   onClose,
 }) => {
   const [panelTab, setPanelTab] = useState<'props' | 'layouts'>('props');
@@ -211,7 +216,7 @@ export const DecorateDrawer: React.FC<Props> = ({
   if (minimized) {
     return (
       <div
-        className={`fixed bottom-[calc(66px+env(safe-area-inset-bottom))] sm:bottom-24 z-30 left-2 right-2 md:right-auto md:left-auto paper-card rounded-2xl px-3 py-2 flex items-center justify-between md:justify-start gap-2 ${
+        className={`fixed bottom-[calc(62px+env(safe-area-inset-bottom))] sm:bottom-[72px] md:bottom-24 z-30 left-2 right-2 md:right-auto md:left-auto paper-card rounded-2xl px-3 py-2 flex items-center justify-between md:justify-start gap-2 ${
           dockSide === 'left' ? 'md:left-5' : 'md:right-5'
         }`}
       >
@@ -263,14 +268,16 @@ export const DecorateDrawer: React.FC<Props> = ({
   }
 
   return (
-    <aside
-      className={`fixed inset-x-0 bottom-[calc(60px+env(safe-area-inset-bottom))] sm:bottom-20 md:inset-x-auto md:top-24 md:bottom-24 z-30 h-[50dvh] max-h-[55dvh] md:h-auto md:max-h-none md:w-[368px] paper-card rounded-t-2xl md:rounded-2xl flex flex-col overflow-hidden ${
-        dockSide === 'left' ? 'md:left-5' : 'md:right-5'
-      }`}
+    <ResponsiveDrawerShell
+      titleLabel="Room Decorator"
+      dockSide={dockSide}
+      widthClass="md:w-[368px]"
+      desktopTopClass="md:top-16"
+      mobileCollapsed={mobileCollapsed}
+      onSetMobileCollapsed={onSetMobileCollapsed}
     >
-      <div className="md:hidden w-10 h-1 rounded-full bg-[#CEB99C] mx-auto mt-2 mb-0.5 shrink-0" />
       {/* Header with Dock Switch & Minimize */}
-      <div className="px-4 py-2.5 md:py-3 border-b border-[#D6C4AC] bg-[#F3EBDD] flex items-center justify-between gap-2">
+      <div className="px-4 py-2 md:py-3 border-b border-[#D6C4AC] bg-[#F3EBDD] flex items-center justify-between gap-2 shrink-0">
         <div className="min-w-0">
           <h3 className="font-display text-base md:text-lg font-bold text-[#3D312A] leading-tight">
             Room Decorator
@@ -306,7 +313,7 @@ export const DecorateDrawer: React.FC<Props> = ({
             onClick={onToggleMinimized}
             title="Minimize panel to reveal full room"
             aria-label="Minimize decorator panel"
-            className="w-9 h-9 md:w-8 md:h-8 rounded-lg hover:bg-[#E8DCC8] flex items-center justify-center text-[#3D312A] cursor-pointer"
+            className="hidden md:flex w-8 h-8 rounded-lg hover:bg-[#E8DCC8] items-center justify-center text-[#3D312A] cursor-pointer"
           >
             <Minimize2 className="w-4 h-4" />
           </button>
@@ -735,6 +742,6 @@ export const DecorateDrawer: React.FC<Props> = ({
           </div>
         </div>
       )}
-    </aside>
+    </ResponsiveDrawerShell>
   );
 };

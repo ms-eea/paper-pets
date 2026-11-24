@@ -120,7 +120,7 @@ export const BottomDock: React.FC<Props> = ({
       {/* Tablet & Desktop (>= sm): Floating cardstock action dock */}
       <nav
         aria-label="Pet care and craft controls"
-        className="hidden sm:flex absolute bottom-4 left-1/2 -translate-x-1/2 z-30 max-w-[96vw] paper-card rounded-2xl p-1.5 items-center gap-1.5 overflow-x-auto"
+        className="hidden sm:flex fixed bottom-2.5 md:bottom-4 left-1/2 -translate-x-1/2 z-30 max-w-[96vw] paper-card rounded-2xl p-1.5 items-center gap-1.5 overflow-x-auto"
       >
         <button
           type="button"

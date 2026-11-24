@@ -41,6 +41,8 @@ interface Props {
   muted: boolean;
   hasUnsavedRoomChanges: boolean;
   lastRoomSaveAt: number;
+  decorateMode?: boolean;
+  onExitDecorate?: () => void;
   onSelectBackground: (id: BackgroundId) => void;
   onChangeTimeOfDay: (time: TimeOfDay) => void;
   onOpenPets: () => void;
@@ -72,6 +74,8 @@ export const TopHud: React.FC<Props> = ({
   muted,
   hasUnsavedRoomChanges,
   lastRoomSaveAt,
+  decorateMode = false,
+  onExitDecorate,
   onSelectBackground,
   onChangeTimeOfDay,
   onOpenPets,
@@ -127,14 +131,37 @@ export const TopHud: React.FC<Props> = ({
     }, new Map<string, typeof BACKGROUND_CATALOG>()),
   );
 
+  if (decorateMode) {
+    return (
+      <header className="fixed top-[max(0.5rem,env(safe-area-inset-top))] right-2.5 sm:right-4 z-30 pointer-events-auto">
+        <div className="paper-card rounded-full pl-3 pr-1.5 py-1.5 flex items-center gap-2 shadow-md">
+          <div className="flex items-center gap-1.5 pr-1">
+            <Coins className="w-4 h-4 text-[#D99B26] shrink-0" />
+            <span className="font-mono-num text-xs sm:text-sm font-bold text-[#3D312A]">
+              {coins}
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={onExitDecorate}
+            className="min-h-[38px] md:min-h-[34px] px-3.5 rounded-full bg-[#2F7D6D] hover:bg-[#256659] text-white text-xs font-bold flex items-center gap-1 transition-colors cursor-pointer whitespace-nowrap"
+          >
+            <Check className="w-3.5 h-3.5 shrink-0" />
+            <span>Done</span>
+          </button>
+        </div>
+      </header>
+    );
+  }
+
   return (
     <header className="absolute top-0 left-0 right-0 z-30 pointer-events-none">
-      {/* MOBILE (< md): Compact Single-Row HUD + Collapsible Tools Menu */}
+      {/* MOBILE (< md): Compact Wrapping HUD + Collapsible Tools Menu */}
       <div
         ref={mobileBarRef}
         className="md:hidden pointer-events-auto relative px-2 pt-[max(0.5rem,env(safe-area-inset-top))]"
       >
-        <div className="paper-card rounded-xl px-2 py-1.5 flex items-center justify-between gap-2">
+        <div className="paper-card rounded-xl px-2 py-1.5 flex flex-wrap items-center justify-between gap-x-2 gap-y-1.5 max-w-full overflow-hidden">
           {/* Pet Avatar Switcher */}
           <button
             type="button"
@@ -150,13 +177,13 @@ export const TopHud: React.FC<Props> = ({
                 className="w-7 h-7 object-contain"
               />
             </div>
-            <span className="text-xs font-bold text-[#3D312A] max-w-[64px] truncate hidden min-[400px]:inline">
+            <span className="text-xs font-bold text-[#3D312A] max-w-[68px] truncate hidden min-[380px]:inline">
               {petName}
             </span>
           </button>
 
-          {/* Compact Dual Bars: Love + Hunger */}
-          <div className="flex-1 min-w-0 grid grid-cols-2 gap-2">
+          {/* Compact Dual Bars: Love + Hunger (wraps smoothly on narrow < 360px screens) */}
+          <div className="flex-1 min-w-[120px] grid grid-cols-2 gap-1.5 sm:gap-2">
             <div className="min-w-0">
               <div className="flex items-center justify-between gap-1 text-[10px] font-semibold text-[#3D312A] mb-0.5">
                 <span className="flex items-center gap-0.5 truncate">
@@ -191,7 +218,7 @@ export const TopHud: React.FC<Props> = ({
           </div>
 
           {/* Coins + Quick Save + Tools Toggle */}
-          <div className="flex items-center gap-1 shrink-0">
+          <div className="flex items-center gap-1 shrink-0 ml-auto">
             <div className="px-1.5 py-1 rounded-lg bg-[#F3EBDD] border border-[#D6C4AC] flex items-center gap-1">
               <Coins className="w-3.5 h-3.5 text-[#D99B26] shrink-0" />
               <span className="font-mono-num text-xs font-bold text-[#3D312A]">{coins}</span>

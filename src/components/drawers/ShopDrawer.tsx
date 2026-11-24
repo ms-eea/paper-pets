@@ -19,6 +19,7 @@ import {
 import { GarmentSvg } from '../svg/GarmentSvg';
 import { PaperBackground } from '../svg/PaperBackgrounds';
 import { PaperDecorationSvg } from '../svg/PaperDecorations';
+import { ResponsiveDrawerShell } from './ResponsiveDrawerShell';
 
 export type ShopTab = 'clothing' | 'patterns' | 'decorations' | 'rooms' | 'treats';
 
@@ -36,6 +37,8 @@ interface Props {
   ) => boolean;
   onPlaceDecoration: (itemId: string) => void;
   onVisitBackground: (bgId: BackgroundId) => void;
+  mobileCollapsed: boolean;
+  onSetMobileCollapsed: (collapsed: boolean) => void;
   onClose: () => void;
 }
 
@@ -44,6 +47,8 @@ const SLOT_LABELS: Record<ClothingSlot, string> = {
   eyewear: 'Eyewear',
   neckwear: 'Neckwear',
   top: 'Tops',
+  wings: 'Wings & Back',
+  handheld: 'Held Items',
 };
 
 const PROP_CATEGORY_LABELS: Record<'indoor' | 'outdoor' | 'craft', string> = {
@@ -74,6 +79,8 @@ export const ShopDrawer: React.FC<Props> = ({
   onBuy,
   onPlaceDecoration,
   onVisitBackground,
+  mobileCollapsed,
+  onSetMobileCollapsed,
   onClose,
 }) => {
   const [tab, setTab] = useState<ShopTab>(initialTab);
@@ -96,8 +103,10 @@ export const ShopDrawer: React.FC<Props> = ({
         { id: 'all', label: 'All' },
         { id: 'hat', label: 'Hats' },
         { id: 'eyewear', label: 'Eyewear' },
-        { id: 'neckwear', label: 'Neckwear' },
+        { id: 'neckwear', label: 'Neck' },
         { id: 'top', label: 'Tops' },
+        { id: 'wings', label: 'Wings' },
+        { id: 'handheld', label: 'Held' },
       ];
     }
     if (tab === 'patterns') {
@@ -167,9 +176,15 @@ export const ShopDrawer: React.FC<Props> = ({
   }, [paidTreats, activeSub]);
 
   return (
-    <aside className="fixed inset-x-0 bottom-[calc(60px+env(safe-area-inset-bottom))] sm:bottom-20 md:inset-x-auto md:right-5 md:top-24 md:bottom-24 z-30 h-[50dvh] max-h-[55dvh] md:h-auto md:max-h-none md:w-[384px] paper-card rounded-t-2xl md:rounded-2xl flex flex-col overflow-hidden">
-      <div className="md:hidden w-10 h-1 rounded-full bg-[#CEB99C] mx-auto mt-2 mb-0.5 shrink-0" />
-      <div className="px-4 py-2.5 md:py-3 border-b border-[#D6C4AC] bg-[#F3EBDD] flex items-center justify-between">
+    <ResponsiveDrawerShell
+      titleLabel="Craft Shop"
+      dockSide="right"
+      widthClass="md:w-[384px]"
+      desktopTopClass="md:top-24"
+      mobileCollapsed={mobileCollapsed}
+      onSetMobileCollapsed={onSetMobileCollapsed}
+    >
+      <div className="px-4 py-2 md:py-3 border-b border-[#D6C4AC] bg-[#F3EBDD] flex items-center justify-between shrink-0">
         <div>
           <h3 className="font-display text-base md:text-lg font-bold text-[#3D312A] flex items-center gap-1.5">
             <ShoppingBag className="w-4 h-4 text-[#D99B26]" />
@@ -501,6 +516,6 @@ export const ShopDrawer: React.FC<Props> = ({
             </section>
           ))}
       </div>
-    </aside>
+    </ResponsiveDrawerShell>
   );
 };

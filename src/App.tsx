@@ -47,6 +47,9 @@ export default function App() {
   const [showPhotoHint, setShowPhotoHint] = useState(false);
   const [decorateDockSide, setDecorateDockSide] = useState<'left' | 'right'>('right');
   const [decorateMinimized, setDecorateMinimized] = useState(false);
+  const [mobileSheetCollapsed, setMobileSheetCollapsed] = useState(false);
+  const [panProgress, setPanProgress] = useState(0.5);
+  const [zoomScale, setZoomScale] = useState<1 | 0.8>(1);
   const [saveToastMessage, setSaveToastMessage] = useState<string | null>(null);
 
   const pauseDecay = screen !== 'PLAYING';
@@ -220,6 +223,7 @@ export default function App() {
       const ok = loadRoomLayoutSlot(slotId);
       if (ok) {
         setSelectedDecoId(null);
+        setPanProgress(0.5);
         setSaveToastMessage('Loaded saved room layout!');
       }
     },
@@ -321,8 +325,10 @@ export default function App() {
   const handleToggleDrawer = useCallback((drawer: ActiveDrawer) => {
     sound.playClick();
     setActiveDrawer(drawer);
+    setMobileSheetCollapsed(false);
     if (drawer !== 'decorate') {
       setSelectedDecoId(null);
+      setZoomScale(1);
     } else {
       setSelectedGarmentSlot(null);
       setDecorateMinimized(false);
@@ -336,24 +342,29 @@ export default function App() {
     sound.playClick();
     setShopTab(tab);
     setActiveDrawer('shop');
+    setMobileSheetCollapsed(false);
+    setZoomScale(1);
     setSelectedDecoId(null);
     setSelectedGarmentSlot(null);
   }, []);
 
+  const viewCenterX =
+    ((0.5 + panProgress * Math.max(0, 2 * zoomScale - 1)) / (2 * zoomScale)) * 100;
+
   const handlePlaceDecoration = useCallback(
     (itemId: string) => {
-      const newId = addPlacedDecoration(itemId);
+      const newId = addPlacedDecoration(itemId, viewCenterX);
       setSelectedDecoId(newId);
     },
-    [addPlacedDecoration],
+    [addPlacedDecoration, viewCenterX],
   );
 
   const handleBuyAndPlace = useCallback(
     (itemId: string) => {
-      const newId = buyAndPlaceDecoration(itemId);
+      const newId = buyAndPlaceDecoration(itemId, viewCenterX);
       if (newId) setSelectedDecoId(newId);
     },
-    [buyAndPlaceDecoration],
+    [buyAndPlaceDecoration, viewCenterX],
   );
 
   const handleEnterPhotoMode = useCallback(() => {
@@ -393,13 +404,33 @@ export default function App() {
   const selectedDecoration =
     currentRoomDecorations.find((d) => d.instanceId === selectedDecoId) || null;
 
-  const hasMobileBottomSheet =
+  const isSheetDrawerOpen =
+    activeDrawer === 'feed' ||
+    activeDrawer === 'dress' ||
+    activeDrawer === 'minigames' ||
+    activeDrawer === 'shop' ||
+    (activeDrawer === 'decorate' && !decorateMinimized);
+
+  const hasExpandedMobileBottomSheet =
     !photoMode &&
-    (activeDrawer === 'feed' ||
-      activeDrawer === 'dress' ||
+    isSheetDrawerOpen &&
+    !(
+      (activeDrawer === 'dress' || activeDrawer === 'shop' || activeDrawer === 'decorate') &&
+      mobileSheetCollapsed
+    );
+
+  const rightDrawerOpenDesktop =
+    !photoMode &&
+    (activeDrawer === 'dress' ||
       activeDrawer === 'minigames' ||
       activeDrawer === 'shop' ||
-      (activeDrawer === 'decorate' && !decorateMinimized));
+      (activeDrawer === 'decorate' && !decorateMinimized && decorateDockSide === 'right'));
+
+  const leftDrawerOpenDesktop =
+    !photoMode &&
+    activeDrawer === 'decorate' &&
+    !decorateMinimized &&
+    decorateDockSide === 'left';
 
   return (
     <main className="relative w-full h-[100dvh] overflow-hidden paper-grain-bg">
@@ -447,9 +478,12 @@ export default function App() {
               muted={data.muted}
               hasUnsavedRoomChanges={hasUnsavedRoomChanges}
               lastRoomSaveAt={data.lastRoomSaveAt}
+              decorateMode={activeDrawer === 'decorate' && !photoMode}
+              onExitDecorate={() => handleToggleDrawer('none')}
               onSelectBackground={(bgId) => {
                 selectBackground(bgId);
                 setSelectedDecoId(null);
+                setPanProgress(0.5);
               }}
               onChangeTimeOfDay={(time) => setRoomTimeOfDay(data.activeBackgroundId, time)}
               onOpenPets={() => handleToggleDrawer(activeDrawer === 'pets' ? 'none' : 'pets')}
@@ -461,6 +495,7 @@ export default function App() {
                 sound.playClick();
                 setPhotoMode(false);
                 setActiveDrawer('none');
+                setZoomScale(1);
                 setScreen('TITLE_MENU');
               }}
             />
@@ -477,7 +512,16 @@ export default function App() {
             decorateMode={activeDrawer === 'decorate' && !photoMode}
             dressMode={activeDrawer === 'dress' && !photoMode}
             photoMode={photoMode}
-            hasMobileBottomSheet={hasMobileBottomSheet}
+            hasMobileBottomSheet={hasExpandedMobileBottomSheet}
+            rightDrawerOpenDesktop={rightDrawerOpenDesktop}
+            leftDrawerOpenDesktop={leftDrawerOpenDesktop}
+            panProgress={panProgress}
+            zoomScale={zoomScale}
+            onPanChange={setPanProgress}
+            onToggleZoom={() => {
+              sound.playClick();
+              setZoomScale((z) => (z === 1 ? 0.8 : 1));
+            }}
             selectedDecoId={selectedDecoId}
             onSelectDeco={setSelectedDecoId}
             onUpdateDeco={updatePlacedDecoration}
@@ -550,7 +594,7 @@ export default function App() {
                 hunger={data.hunger}
                 dailyCheckIn={data.dailyCheckIn}
                 hasUnsavedRoomChanges={hasUnsavedRoomChanges}
-                hideOnMobile={hasMobileBottomSheet}
+                hideOnMobile={hasExpandedMobileBottomSheet}
                 onClaimCheckIn={() => {
                   const grant = claimDailyCheckIn();
                   if (grant) {
@@ -656,9 +700,12 @@ export default function App() {
               onBuyAndApplyPattern={buyAndApplyPattern}
               onUpdateStyle={updateEquippedStyle}
               onOpenShopTab={(tab) => openShopTab(tab)}
+              mobileCollapsed={mobileSheetCollapsed}
+              onSetMobileCollapsed={setMobileSheetCollapsed}
               onClose={() => {
                 setActiveDrawer('none');
                 setSelectedGarmentSlot(null);
+                setMobileSheetCollapsed(false);
               }}
             />
           )}
@@ -716,10 +763,14 @@ export default function App() {
                 }
               }}
               onOpenPropsShop={() => openShopTab('decorations')}
+              mobileCollapsed={mobileSheetCollapsed}
+              onSetMobileCollapsed={setMobileSheetCollapsed}
               onClose={() => {
                 setActiveDrawer('none');
                 setSelectedDecoId(null);
                 setDecorateMinimized(false);
+                setMobileSheetCollapsed(false);
+                setZoomScale(1);
               }}
             />
           )}
@@ -743,15 +794,23 @@ export default function App() {
               treatCounts={data.treatCounts}
               onBuy={buyShopItem}
               onPlaceDecoration={(itemId) => {
-                const newId = addPlacedDecoration(itemId);
+                const newId = addPlacedDecoration(itemId, viewCenterX);
                 setActiveDrawer('decorate');
+                setMobileSheetCollapsed(false);
                 setSelectedDecoId(newId);
               }}
               onVisitBackground={(bgId) => {
                 selectBackground(bgId);
+                setPanProgress(0.5);
                 setActiveDrawer('none');
+                setMobileSheetCollapsed(false);
               }}
-              onClose={() => setActiveDrawer('none')}
+              mobileCollapsed={mobileSheetCollapsed}
+              onSetMobileCollapsed={setMobileSheetCollapsed}
+              onClose={() => {
+                setActiveDrawer('none');
+                setMobileSheetCollapsed(false);
+              }}
             />
           )}
 

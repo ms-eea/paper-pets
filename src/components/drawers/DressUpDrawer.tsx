@@ -30,6 +30,7 @@ import {
   SavedOutfitSlot,
 } from '../../types/game';
 import { GarmentSvg } from '../svg/GarmentSvg';
+import { ResponsiveDrawerShell } from './ResponsiveDrawerShell';
 
 interface Props {
   petId: PetId;
@@ -58,14 +59,18 @@ interface Props {
     >,
   ) => void;
   onOpenShopTab: (tab: 'clothing' | 'patterns') => void;
+  mobileCollapsed: boolean;
+  onSetMobileCollapsed: (collapsed: boolean) => void;
   onClose: () => void;
 }
 
 const SLOTS: { id: ClothingSlot; label: string; singular: string }[] = [
   { id: 'hat', label: 'Hats', singular: 'hat' },
   { id: 'eyewear', label: 'Eyewear', singular: 'glasses' },
-  { id: 'neckwear', label: 'Neckwear', singular: 'tie or scarf' },
+  { id: 'neckwear', label: 'Neck', singular: 'tie or scarf' },
   { id: 'top', label: 'Tops', singular: 'top' },
+  { id: 'wings', label: 'Wings', singular: 'wing or cape' },
+  { id: 'handheld', label: 'Held', singular: 'held item' },
 ];
 
 function resolveInitialSlot(outfit: PetOutfit, lastClothingSlot?: ClothingSlot): ClothingSlot {
@@ -106,6 +111,8 @@ export const DressUpDrawer: React.FC<Props> = ({
   onBuyAndApplyPattern,
   onUpdateStyle,
   onOpenShopTab,
+  mobileCollapsed,
+  onSetMobileCollapsed,
   onClose,
 }) => {
   const [activeSlot, setActiveSlot] = useState<ClothingSlot>(() =>
@@ -209,10 +216,16 @@ export const DressUpDrawer: React.FC<Props> = ({
   };
 
   return (
-    <aside className="fixed inset-x-0 bottom-[calc(60px+env(safe-area-inset-bottom))] sm:bottom-20 md:inset-x-auto md:right-5 md:top-24 md:bottom-24 z-30 h-[50dvh] max-h-[55dvh] md:h-auto md:max-h-none md:w-[368px] paper-card rounded-t-2xl md:rounded-2xl flex flex-col overflow-hidden">
-      <div className="md:hidden w-10 h-1 rounded-full bg-[#CEB99C] mx-auto mt-2 mb-0.5 shrink-0" />
+    <ResponsiveDrawerShell
+      titleLabel="Paper Wardrobe"
+      dockSide="right"
+      widthClass="md:w-[368px]"
+      desktopTopClass="md:top-24"
+      mobileCollapsed={mobileCollapsed}
+      onSetMobileCollapsed={onSetMobileCollapsed}
+    >
       {/* Header */}
-      <div className="px-4 py-2.5 md:py-3 border-b border-[#D6C4AC] bg-[#F3EBDD] flex items-center justify-between gap-2 shrink-0">
+      <div className="px-4 py-2 md:py-3 border-b border-[#D6C4AC] bg-[#F3EBDD] flex items-center justify-between gap-2 shrink-0">
         <div className="min-w-0">
           <h3 className="font-display text-base md:text-lg font-bold text-[#3D312A] leading-tight">
             Paper Wardrobe
@@ -343,7 +356,7 @@ export const DressUpDrawer: React.FC<Props> = ({
       )}
 
       {/* Slot Tabs */}
-      <div className="px-3 pt-2 pb-2 flex items-center gap-1 border-b border-[#E8DCC8] shrink-0">
+      <div className="px-3 pt-2 pb-2 grid grid-cols-3 gap-1 border-b border-[#E8DCC8] shrink-0">
         {SLOTS.map((s) => {
           const active = s.id === activeSlot && effectiveView !== 'saved';
           const hasEquipped = Boolean(outfit[s.id]);
@@ -356,7 +369,7 @@ export const DressUpDrawer: React.FC<Props> = ({
                 setSubFilter('all');
                 setViewMode(outfit[s.id] ? 'style' : 'choose');
               }}
-              className={`flex-1 py-1.5 px-2 rounded-lg text-xs font-semibold transition-colors whitespace-nowrap cursor-pointer ${
+              className={`py-1.5 px-2 rounded-lg text-xs font-semibold transition-colors whitespace-nowrap cursor-pointer ${
                 active
                   ? 'bg-[#3D312A] text-[#FBF7F0]'
                   : 'bg-[#F3EBDD] text-[#6E5D52] hover:text-[#3D312A]'
@@ -633,7 +646,7 @@ export const DressUpDrawer: React.FC<Props> = ({
               </div>
               {wornEntries.length === 0 && (
                 <p className="text-[11px] text-[#6E5D52]">
-                  Put on at least one hat, glasses, tie, or top to save an outfit look.
+                  Put on at least one hat, glasses, tie, top, wings, or held item to save an outfit look.
                 </p>
               )}
             </section>
@@ -994,6 +1007,6 @@ export const DressUpDrawer: React.FC<Props> = ({
           )
         )}
       </div>
-    </aside>
+    </ResponsiveDrawerShell>
   );
 };

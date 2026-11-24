@@ -173,8 +173,8 @@ export const ColorShapeSortGame: React.FC<Props> = ({ onComplete, onExit }) => {
   const activeHex = BINS.find((b) => b.color === activeToken?.color)?.hex || '#D95D39';
 
   return (
-    <div className="fixed inset-0 z-50 bg-[#3D312A]/60 flex items-center justify-center p-2.5 sm:p-4">
-      <div className="relative w-full max-w-xl max-h-[94dvh] overflow-y-auto overscroll-contain craft-scroll paper-card rounded-2xl">
+    <div className="fixed inset-0 z-50 bg-[#3D312A]/70 flex items-center justify-center p-0 md:p-4 touch-none">
+      <div className="relative w-full h-[100dvh] md:h-auto md:max-w-xl md:max-h-[94dvh] overflow-y-auto overscroll-contain craft-scroll paper-card rounded-none md:rounded-2xl flex flex-col">
         <div className="px-3.5 sm:px-4 py-2.5 sm:py-3 bg-[#F3EBDD] border-b border-[#D6C4AC] flex flex-wrap items-center justify-between gap-2 sm:gap-3">
           <div className="min-w-0">
             <h3 className="font-display text-base sm:text-lg font-bold text-[#3D312A]">

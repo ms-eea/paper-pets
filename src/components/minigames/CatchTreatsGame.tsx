@@ -420,8 +420,8 @@ export const CatchTreatsGame: React.FC<Props> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-[#3D312A]/60 flex items-center justify-center p-2.5 sm:p-4">
-      <div className="relative w-full max-w-3xl max-h-[94dvh] paper-card rounded-2xl overflow-hidden flex flex-col">
+    <div className="fixed inset-0 z-50 bg-[#3D312A]/70 flex items-center justify-center p-0 md:p-4 touch-none">
+      <div className="relative w-full h-[100dvh] md:h-auto md:max-w-3xl md:max-h-[94dvh] paper-card rounded-none md:rounded-2xl overflow-hidden flex flex-col">
         {/* Top Game HUD */}
         <div className="px-3.5 sm:px-4 py-2.5 sm:py-3 bg-[#F3EBDD] border-b border-[#D6C4AC] flex flex-wrap items-center justify-between gap-2 sm:gap-3 shrink-0">
           <div className="min-w-0">
@@ -490,13 +490,13 @@ export const CatchTreatsGame: React.FC<Props> = ({
         </div>
 
         {/* Isolated Canvas Viewport */}
-        <div className="relative bg-[#DDEEF2] flex-1 min-h-0 flex items-center justify-center">
+        <div className="relative bg-[#DDEEF2] flex-1 min-h-0 flex items-center justify-center overflow-hidden">
           <canvas
             ref={canvasRef}
             width={W}
             height={H}
             data-paused={phase !== 'PLAYING' ? 'true' : 'false'}
-            className="w-full h-auto block touch-none md:cursor-ew-resize"
+            className="w-auto h-auto md:w-full max-w-full max-h-full aspect-[3/2] block touch-none md:cursor-ew-resize"
           />
 
           {phase === 'PAUSED' && (

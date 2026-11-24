@@ -1,6 +1,6 @@
 export type PetId = 'rawr' | 'scorch' | 'trot' | 'buddybear' | 'catty' | 'douggie';
 
-export type ClothingSlot = 'hat' | 'eyewear' | 'neckwear' | 'top';
+export type ClothingSlot = 'hat' | 'eyewear' | 'neckwear' | 'top' | 'wings' | 'handheld';
 
 export type PatternId =
   | 'solid'
@@ -12,7 +12,11 @@ export type PatternId =
   | 'plaid'
   | 'hearts'
   | 'floral'
-  | 'terrazzo';
+  | 'terrazzo'
+  | 'checker'
+  | 'confetti'
+  | 'rainbow'
+  | 'argyle';
 
 export type BackgroundId =
   | 'meadow'
@@ -198,6 +202,7 @@ export interface PaperPetsSaveData {
   treatCounts: Record<string, number>;
   roomDecorations: Record<BackgroundId, PlacedDecoration[]>;
   savedRoomSlots: SavedRoomLayoutSlot[];
+  panoramicNormalized?: boolean;
   highScores: Record<MiniGameId, number>;
   dailyCheckIn: DailyCheckInState;
   muted: boolean;

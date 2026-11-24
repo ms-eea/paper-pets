@@ -26,7 +26,7 @@ export const FeedTray: React.FC<Props> = ({ treatCounts, onFeed, onOpenShop, onC
   );
 
   return (
-    <div className="fixed inset-x-0 bottom-[calc(60px+env(safe-area-inset-bottom))] sm:bottom-24 sm:inset-x-auto sm:left-1/2 sm:-translate-x-1/2 z-30 w-full sm:w-[92vw] sm:max-w-2xl paper-card rounded-t-2xl sm:rounded-2xl p-3.5 sm:p-4 max-h-[48dvh] sm:max-h-none flex flex-col">
+    <div className="fixed inset-x-0 bottom-[calc(62px+env(safe-area-inset-bottom))] sm:bottom-[72px] md:bottom-24 sm:inset-x-auto sm:left-1/2 sm:-translate-x-1/2 z-30 w-full sm:w-[92vw] sm:max-w-2xl paper-card rounded-t-2xl sm:rounded-2xl p-3.5 sm:p-4 max-h-[45dvh] sm:max-h-none flex flex-col">
       <div className="sm:hidden w-10 h-1 rounded-full bg-[#CEB99C] mx-auto mb-2 shrink-0" />
 
       <div className="flex flex-wrap items-center justify-between gap-2 mb-2.5 shrink-0">
