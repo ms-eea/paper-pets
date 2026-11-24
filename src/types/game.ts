@@ -159,6 +159,14 @@ export interface SavedRoomLayoutSlot {
   savedAt: number;
 }
 
+export interface SavedOutfitSlot {
+  id: string;
+  petId: PetId;
+  name: string;
+  outfit: PetOutfit;
+  savedAt: number;
+}
+
 export interface DailyCheckInState {
   streak: number;
   bestStreak: number;
@@ -177,10 +185,12 @@ export interface PaperPetsSaveData {
   hunger: number;
   lastSavedAt: number;
   lastRoomSaveAt: number;
+  lastOutfitSaveAt?: number;
   activeBackgroundId: BackgroundId;
   roomTimeOfDay: Record<BackgroundId, TimeOfDay>;
   outfits: Record<PetId, PetOutfit>;
   lastClothingSlots?: Partial<Record<PetId, ClothingSlot>>;
+  savedOutfitSlots?: SavedOutfitSlot[];
   unlockedClothingIds: string[];
   unlockedPatternIds: PatternId[];
   unlockedDecorationIds: string[];

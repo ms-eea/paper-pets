@@ -11,7 +11,7 @@ import {
   TimeOfDay,
   TreatItemDef,
 } from '../types/game';
-import buddybearSticker from '../assets/images/pet_buddybear_handdrawn_1795031825755.jpg';
+import buddybearSticker from '../assets/images/pet_buddybear_chibi_1795365607009.jpg';
 import cattySticker from '../assets/images/pet_catty_closeeyes_v2_1795032573398.jpg';
 import douggieSticker from '../assets/images/pet_douggie_closeeyes_1795032558315.jpg';
 import rawrSticker from '../assets/images/pet_rawr_bigeyes_1795032532399.jpg';
@@ -73,10 +73,10 @@ export const PET_CATALOG: PetDefinition[] = [
     rawAsset: buddybearSticker,
     accentColor: '#7F6A58',
     anchors: {
-      hat: { x: 50, y: 10.5, scale: 0.76, rotate: 0 },
-      eyewear: { x: 50, y: 22.5, scale: 0.86, rotate: 0 },
-      neckwear: { x: 50, y: 45, scale: 0.82, rotate: 0 },
-      top: { x: 50, y: 65, scale: 0.98, rotate: 0 },
+      hat: { x: 50, y: 9.5, scale: 0.78, rotate: 0 },
+      eyewear: { x: 50, y: 30, scale: 0.88, rotate: 0 },
+      neckwear: { x: 50, y: 57, scale: 0.8, rotate: 0 },
+      top: { x: 50, y: 69.5, scale: 1.12, rotate: 0 },
     },
   },
   {
@@ -2367,6 +2367,7 @@ export function createInitialSaveData(): PaperPetsSaveData {
     coins: 120,
     lastSavedAt: Date.now(),
     lastRoomSaveAt: Date.now(),
+    lastOutfitSaveAt: Date.now(),
     muted: false,
     unlockedClothingIds: CLOTHING_CATALOG.filter((c) => c.price === 0).map((c) => c.id),
     unlockedPatternIds: PATTERN_CATALOG.filter((p) => p.price === 0).map((p) => p.id),
@@ -2387,6 +2388,7 @@ export function createInitialSaveData(): PaperPetsSaveData {
     },
     roomDecorations: structuredClone(DEFAULT_ROOM_DECORATIONS),
     savedRoomSlots: [],
+    savedOutfitSlots: [],
     highScores: {
       catch_treats: 0,
       memory_match: 0,

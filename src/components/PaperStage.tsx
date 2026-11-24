@@ -1,8 +1,17 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { ArrowDown, ArrowUp, FlipHorizontal, Maximize2, X } from 'lucide-react';
-import { DECORATION_CATALOG } from '../data/catalog';
+import {
+  ArrowDown,
+  ArrowUp,
+  FlipHorizontal,
+  Maximize2,
+  Sliders,
+  Trash2,
+  X,
+} from 'lucide-react';
+import { CLOTHING_CATALOG, DECORATION_CATALOG } from '../data/catalog';
 import {
   BackgroundId,
+  ClothingSlot,
   PetId,
   PetOutfit,
   PlacedDecoration,
@@ -10,6 +19,7 @@ import {
   TimeOfDay,
 } from '../types/game';
 import { PetWithWardrobe } from './PetWithWardrobe';
+import { GarmentSvg } from './svg/GarmentSvg';
 import { PaperBackground } from './svg/PaperBackgrounds';
 import { PaperDecorationSvg } from './svg/PaperDecorations';
 
@@ -22,12 +32,17 @@ interface Props {
   outfit: PetOutfit;
   decorations: PlacedDecoration[];
   decorateMode: boolean;
+  dressMode?: boolean;
   photoMode?: boolean;
   hasMobileBottomSheet?: boolean;
   selectedDecoId: string | null;
   onSelectDeco: (id: string | null) => void;
   onUpdateDeco: (id: string, patch: Partial<PlacedDecoration>) => void;
   onRemoveDeco: (id: string) => void;
+  selectedGarmentSlot?: ClothingSlot | null;
+  onSelectGarment?: (slot: ClothingSlot | null) => void;
+  onEditGarment?: (slot: ClothingSlot) => void;
+  onRemoveGarment?: (slot: ClothingSlot) => void;
   onPetTap: () => void;
   petSquishing: boolean;
   petTrickActive: boolean;
@@ -35,6 +50,13 @@ interface Props {
   love: number;
   hunger: number;
 }
+
+const SLOT_LABELS: Record<ClothingSlot, string> = {
+  hat: 'Hat',
+  eyewear: 'Eyewear',
+  neckwear: 'Neckwear',
+  top: 'Top',
+};
 
 type DragState =
   | {
@@ -64,12 +86,17 @@ export const PaperStage: React.FC<Props> = ({
   outfit,
   decorations,
   decorateMode,
+  dressMode = false,
   photoMode = false,
   hasMobileBottomSheet = false,
   selectedDecoId,
   onSelectDeco,
   onUpdateDeco,
   onRemoveDeco,
+  selectedGarmentSlot = null,
+  onSelectGarment,
+  onEditGarment,
+  onRemoveGarment,
   onPetTap,
   petSquishing,
   petTrickActive,
@@ -147,7 +174,7 @@ export const PaperStage: React.FC<Props> = ({
   const renderDecoration = (deco: PlacedDecoration) => {
     const def = DECORATION_CATALOG.find((d) => d.id === deco.itemId);
     const basePx = Math.round((def?.baseSizePx ?? 100) * propViewportFactor);
-    const canInteractAnytime = !photoMode;
+    const canInteractAnytime = !photoMode && !dressMode;
     const isDraggingThis = dragState?.id === deco.instanceId;
     const isSelected = canInteractAnytime && selectedDecoId === deco.instanceId;
 
@@ -157,6 +184,7 @@ export const PaperStage: React.FC<Props> = ({
         onPointerDown={(e) => {
           if (!canInteractAnytime) return;
           e.stopPropagation();
+          onSelectGarment?.(null);
           onSelectDeco(deco.instanceId);
           setDragState({
             mode: 'move',
@@ -292,11 +320,22 @@ export const PaperStage: React.FC<Props> = ({
         ? 'top-[52%]'
         : 'top-[56%]';
 
+  const selectedGarment =
+    selectedGarmentSlot && !decorateMode && !photoMode
+      ? outfit[selectedGarmentSlot] || null
+      : null;
+  const selectedGarmentDef = selectedGarment
+    ? CLOTHING_CATALOG.find((c) => c.id === selectedGarment.itemId) || null
+    : null;
+
   return (
     <div
       ref={stageRef}
       onPointerDown={() => {
-        if (!photoMode) onSelectDeco(null);
+        if (!photoMode) {
+          onSelectDeco(null);
+          onSelectGarment?.(null);
+        }
       }}
       className="relative w-full h-full overflow-hidden touch-pan-x touch-pan-y"
     >
@@ -310,12 +349,16 @@ export const PaperStage: React.FC<Props> = ({
 
       {/* Center Stage Pet Sticker + Wardrobe (nudges up on mobile when half-screen sheet is open) */}
       <div
-        className={`absolute left-1/2 -translate-x-1/2 -translate-y-1/2 z-20 transition-[top] duration-200 ${petTopClass} ${
-          decorateMode ? 'pointer-events-none opacity-85' : ''
+        className={`absolute left-1/2 -translate-x-1/2 -translate-y-1/2 transition-[top] duration-200 ${petTopClass} ${
+          decorateMode
+            ? 'z-20 pointer-events-none opacity-80'
+            : selectedGarment
+              ? 'z-30'
+              : 'z-20'
         }`}
       >
         <div className="relative flex flex-col items-center">
-          {needsCareHint && !decorateMode && !photoMode && (
+          {needsCareHint && !decorateMode && !photoMode && !selectedGarment && (
             <div className="mb-1 px-2.5 py-0.5 rounded-md bg-[#FBF7F0]/95 border border-[#D6C4AC] text-xs font-medium text-[#6E5D52] shadow-sm whitespace-nowrap">
               {hunger < 35 ? `${petName} is hungry!` : `${petName} misses hugs!`}
             </div>
@@ -327,8 +370,66 @@ export const PaperStage: React.FC<Props> = ({
             sizePx={petSizePx}
             squishing={petSquishing}
             trickActive={petTrickActive}
+            interactiveGarments={!photoMode && !decorateMode}
+            selectedGarmentSlot={!photoMode && !decorateMode ? selectedGarmentSlot : null}
+            onSelectGarment={(slot) => {
+              onSelectDeco(null);
+              onSelectGarment?.(slot);
+            }}
             onClick={decorateMode || photoMode ? undefined : onPetTap}
           />
+
+          {/* Floating Garment Quick-Action Popover */}
+          {selectedGarment && selectedGarmentSlot && (
+            <div
+              onPointerDown={(e) => e.stopPropagation()}
+              onClick={(e) => e.stopPropagation()}
+              className="absolute -bottom-3 left-1/2 -translate-x-1/2 z-40 paper-card rounded-xl px-2.5 py-2 flex items-center gap-2 shadow-lg border-[#CEB99C] bg-[#FBF7F0] max-w-[92vw]"
+            >
+              <div className="w-8 h-8 rounded-lg bg-[#F3EBDD] border border-[#E8DCC8] flex items-center justify-center shrink-0">
+                <GarmentSvg
+                  itemId={selectedGarment.itemId}
+                  colorHex={selectedGarment.colorHex}
+                  patternId={selectedGarment.patternId}
+                  className="w-7 h-7"
+                />
+              </div>
+              <div className="min-w-0 max-w-[116px]">
+                <div className="text-xs font-bold text-[#3D312A] truncate">
+                  {selectedGarmentDef?.name || 'Outfit Piece'}
+                </div>
+                <div className="text-[10px] font-medium text-[#6E5D52] truncate">
+                  {SLOT_LABELS[selectedGarmentSlot]}
+                </div>
+              </div>
+              <div className="flex items-center gap-1 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => onEditGarment?.(selectedGarmentSlot)}
+                  className="min-h-[36px] px-2.5 py-1 rounded-lg bg-[#D95D39] hover:bg-[#C24D2B] text-white text-xs font-bold flex items-center gap-1 whitespace-nowrap cursor-pointer"
+                >
+                  <Sliders className="w-3.5 h-3.5 shrink-0" />
+                  <span>Edit</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onRemoveGarment?.(selectedGarmentSlot)}
+                  className="min-h-[36px] px-2.5 py-1 rounded-lg bg-[#FCE6E0] hover:bg-[#F7CFC4] border border-[#E5ACA0] text-[#B83B1D] text-xs font-bold flex items-center gap-1 whitespace-nowrap cursor-pointer"
+                >
+                  <Trash2 className="w-3.5 h-3.5 shrink-0" />
+                  <span>Take Off</span>
+                </button>
+                <button
+                  type="button"
+                  aria-label="Close clothing actions"
+                  onClick={() => onSelectGarment?.(null)}
+                  className="w-8 h-8 rounded-lg hover:bg-[#E8DCC8] text-[#6E5D52] flex items-center justify-center cursor-pointer"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 

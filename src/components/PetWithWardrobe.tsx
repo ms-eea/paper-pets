@@ -12,6 +12,9 @@ interface Props {
   squishing?: boolean;
   trickActive?: boolean;
   idleBob?: boolean;
+  interactiveGarments?: boolean;
+  selectedGarmentSlot?: ClothingSlot | null;
+  onSelectGarment?: (slot: ClothingSlot) => void;
   onClick?: () => void;
   className?: string;
 }
@@ -35,6 +38,9 @@ export const PetWithWardrobe: React.FC<Props> = ({
   squishing = false,
   trickActive = false,
   idleBob = true,
+  interactiveGarments = false,
+  selectedGarmentSlot = null,
+  onSelectGarment,
   onClick,
   className = '',
 }) => {
@@ -80,23 +86,33 @@ export const PetWithWardrobe: React.FC<Props> = ({
         const slotScale = anchor.scale * (equipped.nudgeScale ?? 1);
         const baseWidthPct = slot === 'top' ? 54 : slot === 'hat' ? 46 : 44;
         const rot = anchor.rotate ?? 0;
+        const isSelected = interactiveGarments && selectedGarmentSlot === slot;
 
         return (
           <div
             key={slot}
-            className="absolute pointer-events-none sticker-shadow"
+            className="absolute pointer-events-none sticker-shadow transition-[filter] duration-150"
             style={{
               left: `${leftPct}%`,
               top: `${topPct}%`,
               width: `${baseWidthPct}%`,
               aspectRatio: '4 / 3',
               transform: `translate(-50%, -50%) scale(${slotScale}) rotate(${rot}deg)`,
+              filter: isSelected
+                ? 'drop-shadow(0 0 5px #D95D39) drop-shadow(0 3px 6px rgba(61, 49, 42, 0.28))'
+                : undefined,
             }}
           >
             <GarmentSvg
               itemId={equipped.itemId}
               colorHex={equipped.colorHex}
               patternId={equipped.patternId}
+              interactive={interactiveGarments}
+              onSelect={
+                interactiveGarments && onSelectGarment
+                  ? () => onSelectGarment(slot)
+                  : undefined
+              }
             />
           </div>
         );

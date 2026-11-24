@@ -19,6 +19,7 @@ import { DEFAULT_ROOM_TIME_OF_DAY, PET_BY_ID, TREAT_CATALOG } from './data/catal
 import { usePaperPetsStore } from './hooks/usePaperPetsStore';
 import {
   ActiveDrawer,
+  ClothingSlot,
   GameScreenState,
   MiniGameId,
   PetId,
@@ -33,6 +34,11 @@ export default function App() {
   const [activeDrawer, setActiveDrawer] = useState<ActiveDrawer>('none');
   const [shopTab, setShopTab] = useState<ShopTab>('clothing');
   const [selectedDecoId, setSelectedDecoId] = useState<string | null>(null);
+  const [selectedGarmentSlot, setSelectedGarmentSlot] = useState<ClothingSlot | null>(null);
+  const [dressFocusRequest, setDressFocusRequest] = useState<{
+    slot: ClothingSlot;
+    token: number;
+  } | null>(null);
   const [stickerMap, setStickerMap] = useState<Partial<Record<PetId, string>>>({});
   const [petSquishing, setPetSquishing] = useState(false);
   const [petTrickActive, setPetTrickActive] = useState(false);
@@ -49,6 +55,7 @@ export default function App() {
     welcomeNotice,
     checkInNotice,
     hasUnsavedRoomChanges,
+    hasUnsavedOutfitChanges,
     dismissWelcomeNotice,
     dismissCheckInNotice,
     recordPetInteraction,
@@ -61,7 +68,12 @@ export default function App() {
     giveLove,
     feedPet,
     equipGarment,
+    clearOutfit,
     updateEquippedStyle,
+    saveOutfitNow,
+    saveOutfitSlot,
+    loadOutfitSlot,
+    deleteOutfitSlot,
     addPlacedDecoration,
     updatePlacedDecoration,
     removePlacedDecoration,
@@ -101,14 +113,16 @@ export default function App() {
         } else if (activeDrawer !== 'none') {
           setActiveDrawer('none');
           setSelectedDecoId(null);
-        } else if (selectedDecoId) {
+          setSelectedGarmentSlot(null);
+        } else if (selectedDecoId || selectedGarmentSlot) {
           setSelectedDecoId(null);
+          setSelectedGarmentSlot(null);
         }
       }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [screen, activeDrawer, photoMode, selectedDecoId]);
+  }, [screen, activeDrawer, photoMode, selectedDecoId, selectedGarmentSlot]);
 
   // Briefly show and fade out Photo Mode instructions so screenshots stay spotless
   useEffect(() => {
@@ -220,6 +234,46 @@ export default function App() {
     [overwriteRoomLayoutSlot],
   );
 
+  const handleSaveOutfit = useCallback(() => {
+    saveOutfitNow();
+    setSaveToastMessage('Outfit saved for your next visit!');
+  }, [saveOutfitNow]);
+
+  const handleSaveOutfitSlot = useCallback(
+    (name?: string) => {
+      const slot = saveOutfitSlot(name);
+      setSaveToastMessage(`Saved outfit "${slot.name}"!`);
+    },
+    [saveOutfitSlot],
+  );
+
+  const handleLoadOutfitSlot = useCallback(
+    (slotId: string) => {
+      const ok = loadOutfitSlot(slotId);
+      if (ok) {
+        setSelectedGarmentSlot(null);
+        setSaveToastMessage('Loaded saved outfit!');
+      }
+    },
+    [loadOutfitSlot],
+  );
+
+  const handleEditGarment = useCallback((slot: ClothingSlot) => {
+    sound.playClick();
+    setSelectedDecoId(null);
+    setSelectedGarmentSlot(slot);
+    setActiveDrawer('dress');
+    setDressFocusRequest({ slot, token: Date.now() });
+  }, []);
+
+  const handleRemoveGarment = useCallback(
+    (slot: ClothingSlot) => {
+      equipGarment(slot, null);
+      setSelectedGarmentSlot((prev) => (prev === slot ? null : prev));
+    },
+    [equipGarment],
+  );
+
   const handleGiveLove = useCallback(() => {
     giveLove();
     triggerSquish();
@@ -256,6 +310,8 @@ export default function App() {
       } else {
         adoptPet(petId, customName);
       }
+      setSelectedGarmentSlot(null);
+      setSelectedDecoId(null);
       setActiveDrawer('none');
       setScreen('PLAYING');
     },
@@ -268,7 +324,11 @@ export default function App() {
     if (drawer !== 'decorate') {
       setSelectedDecoId(null);
     } else {
+      setSelectedGarmentSlot(null);
       setDecorateMinimized(false);
+    }
+    if (drawer !== 'dress' && drawer !== 'none') {
+      setSelectedGarmentSlot(null);
     }
   }, []);
 
@@ -277,6 +337,7 @@ export default function App() {
     setShopTab(tab);
     setActiveDrawer('shop');
     setSelectedDecoId(null);
+    setSelectedGarmentSlot(null);
   }, []);
 
   const handlePlaceDecoration = useCallback(
@@ -299,6 +360,7 @@ export default function App() {
     sound.playClick();
     setActiveDrawer('none');
     setSelectedDecoId(null);
+    setSelectedGarmentSlot(null);
     setPhotoMode(true);
   }, []);
 
@@ -310,6 +372,8 @@ export default function App() {
   const handleLaunchMiniGame = useCallback((gameId: MiniGameId) => {
     sound.playPop();
     setPhotoMode(false);
+    setSelectedDecoId(null);
+    setSelectedGarmentSlot(null);
     setActiveMiniGame(gameId);
     setActiveDrawer('none');
     setScreen('MINIGAME');
@@ -411,6 +475,7 @@ export default function App() {
             outfit={data.outfits[data.activePetId] || {}}
             decorations={currentRoomDecorations}
             decorateMode={activeDrawer === 'decorate' && !photoMode}
+            dressMode={activeDrawer === 'dress' && !photoMode}
             photoMode={photoMode}
             hasMobileBottomSheet={hasMobileBottomSheet}
             selectedDecoId={selectedDecoId}
@@ -420,6 +485,15 @@ export default function App() {
               removePlacedDecoration(id);
               if (selectedDecoId === id) setSelectedDecoId(null);
             }}
+            selectedGarmentSlot={selectedGarmentSlot}
+            onSelectGarment={(slot) => {
+              setSelectedGarmentSlot(slot);
+              if (slot && activeDrawer === 'dress') {
+                setDressFocusRequest({ slot, token: Date.now() });
+              }
+            }}
+            onEditGarment={handleEditGarment}
+            onRemoveGarment={handleRemoveGarment}
             onPetTap={handleGiveLove}
             petSquishing={petSquishing}
             petTrickActive={petTrickActive}
@@ -558,17 +632,34 @@ export default function App() {
           {activeDrawer === 'dress' && (
             <DressUpDrawer
               key={data.activePetId}
+              petId={data.activePetId}
+              petName={activePetName}
               coins={data.coins}
               outfit={data.outfits[data.activePetId] || {}}
               lastClothingSlot={data.lastClothingSlots?.[data.activePetId]}
+              focusRequest={dressFocusRequest}
+              hasUnsavedOutfitChanges={hasUnsavedOutfitChanges}
+              lastOutfitSaveAt={data.lastOutfitSaveAt}
+              savedOutfitSlots={data.savedOutfitSlots || []}
               unlockedClothingIds={data.unlockedClothingIds}
               unlockedPatternIds={data.unlockedPatternIds}
               onEquip={equipGarment}
+              onClearOutfit={() => {
+                clearOutfit();
+                setSelectedGarmentSlot(null);
+              }}
+              onSaveOutfitNow={handleSaveOutfit}
+              onSaveOutfitSlot={handleSaveOutfitSlot}
+              onLoadOutfitSlot={handleLoadOutfitSlot}
+              onDeleteOutfitSlot={deleteOutfitSlot}
               onBuyAndEquipClothing={buyAndEquipClothing}
               onBuyAndApplyPattern={buyAndApplyPattern}
               onUpdateStyle={updateEquippedStyle}
               onOpenShopTab={(tab) => openShopTab(tab)}
-              onClose={() => setActiveDrawer('none')}
+              onClose={() => {
+                setActiveDrawer('none');
+                setSelectedGarmentSlot(null);
+              }}
             />
           )}
 
@@ -673,6 +764,7 @@ export default function App() {
               onConfirm={(petId, customName) => {
                 selectPet(petId);
                 renamePet(petId, customName);
+                setSelectedGarmentSlot(null);
                 setActiveDrawer('none');
               }}
               onClose={() => setActiveDrawer('none')}

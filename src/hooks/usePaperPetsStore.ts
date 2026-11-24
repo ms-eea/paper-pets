@@ -22,7 +22,9 @@ import {
   PaperPetsSaveData,
   PatternId,
   PetId,
+  PetOutfit,
   PlacedDecoration,
+  SavedOutfitSlot,
   SavedRoomLayoutSlot,
   TimeOfDay,
 } from '../types/game';
@@ -31,6 +33,50 @@ import { sound } from '../utils/sound';
 // Gentle decay: ~0.45 points per minute (~27 points per hour), floored at 10
 const DECAY_PER_MS = 0.45 / 60000;
 const MIN_METER = 10;
+const CLOTHING_SLOTS: ClothingSlot[] = ['hat', 'eyewear', 'neckwear', 'top'];
+
+function persistSaveSync(next: PaperPetsSaveData) {
+  try {
+    localStorage.setItem(
+      SAVE_STORAGE_KEY,
+      JSON.stringify({
+        ...next,
+        lastSavedAt: next.lastSavedAt || Date.now(),
+      }),
+    );
+  } catch {
+    // Ignore storage quota errors
+  }
+}
+
+function sanitizeOutfit(rawOutfit: PetOutfit | undefined | null): PetOutfit {
+  const cleaned: PetOutfit = {};
+  if (!rawOutfit || typeof rawOutfit !== 'object') return cleaned;
+  for (const slot of CLOTHING_SLOTS) {
+    const garment = rawOutfit[slot];
+    if (!garment || typeof garment !== 'object' || typeof garment.itemId !== 'string') continue;
+    const def = CLOTHING_CATALOG.find((c) => c.id === garment.itemId && c.slot === slot);
+    if (!def) continue;
+    const validPattern = PATTERN_CATALOG.some((p) => p.id === garment.patternId)
+      ? garment.patternId
+      : def.defaultPattern;
+    cleaned[slot] = {
+      itemId: def.id,
+      colorHex: typeof garment.colorHex === 'string' && garment.colorHex ? garment.colorHex : def.defaultColor,
+      patternId: validPattern,
+      ...(typeof garment.nudgeX === 'number' && Number.isFinite(garment.nudgeX)
+        ? { nudgeX: Math.max(-15, Math.min(15, garment.nudgeX)) }
+        : {}),
+      ...(typeof garment.nudgeY === 'number' && Number.isFinite(garment.nudgeY)
+        ? { nudgeY: Math.max(-15, Math.min(15, garment.nudgeY)) }
+        : {}),
+      ...(typeof garment.nudgeScale === 'number' && Number.isFinite(garment.nudgeScale)
+        ? { nudgeScale: Math.max(0.7, Math.min(1.35, garment.nudgeScale)) }
+        : {}),
+    };
+  }
+  return cleaned;
+}
 
 export interface AwaySummary {
   minutesAway: number;
@@ -113,12 +159,46 @@ function loadAndNormalizeSave(): { save: PaperPetsSaveData; awaySummary: AwaySum
         });
     }
 
+    const rawOutfits = { ...initial.outfits, ...(parsed.outfits || {}) };
+    const normalizedOutfits: Record<PetId, PetOutfit> = {
+      rawr: sanitizeOutfit(rawOutfits.rawr),
+      scorch: sanitizeOutfit(rawOutfits.scorch),
+      trot: sanitizeOutfit(rawOutfits.trot),
+      buddybear: sanitizeOutfit(rawOutfits.buddybear),
+      catty: sanitizeOutfit(rawOutfits.catty),
+      douggie: sanitizeOutfit(rawOutfits.douggie),
+    };
+
+    const hydratedOutfitSlots: SavedOutfitSlot[] = Array.isArray(parsed.savedOutfitSlots)
+      ? parsed.savedOutfitSlots
+          .filter((s) => s && typeof s.id === 'string' && typeof s.petId === 'string')
+          .map((s) => ({
+            ...s,
+            outfit: sanitizeOutfit(s.outfit),
+          }))
+      : [];
+
+    const equippedItemIds: string[] = [];
+    for (const petOutfit of Object.values(normalizedOutfits)) {
+      for (const slot of CLOTHING_SLOTS) {
+        const garment = petOutfit?.[slot];
+        if (garment?.itemId) equippedItemIds.push(garment.itemId);
+      }
+    }
+    for (const slotEntry of hydratedOutfitSlots) {
+      for (const slot of CLOTHING_SLOTS) {
+        const garment = slotEntry.outfit?.[slot];
+        if (garment?.itemId) equippedItemIds.push(garment.itemId);
+      }
+    }
+
     const merged: PaperPetsSaveData = {
       ...initial,
       ...parsed,
       petNames: { ...initial.petNames, ...(parsed.petNames || {}) },
-      outfits: { ...initial.outfits, ...(parsed.outfits || {}) },
+      outfits: normalizedOutfits,
       lastClothingSlots: { ...(parsed.lastClothingSlots || {}) },
+      savedOutfitSlots: hydratedOutfitSlots,
       treatCounts: { ...initial.treatCounts, ...(parsed.treatCounts || {}) },
       roomDecorations: rawRoomDecorations,
       roomTimeOfDay: {
@@ -127,10 +207,15 @@ function loadAndNormalizeSave(): { save: PaperPetsSaveData; awaySummary: AwaySum
       },
       savedRoomSlots: Array.isArray(parsed.savedRoomSlots) ? parsed.savedRoomSlots : [],
       lastRoomSaveAt: parsed.lastRoomSaveAt || parsed.lastSavedAt || initial.lastRoomSaveAt,
+      lastOutfitSaveAt: parsed.lastOutfitSaveAt || parsed.lastSavedAt || initial.lastOutfitSaveAt,
       highScores: { ...initial.highScores, ...(parsed.highScores || {}) },
       dailyCheckIn: hydratedCheckIn,
       unlockedClothingIds: Array.from(
-        new Set([...initial.unlockedClothingIds, ...(parsed.unlockedClothingIds || [])]),
+        new Set([
+          ...initial.unlockedClothingIds,
+          ...(parsed.unlockedClothingIds || []),
+          ...equippedItemIds,
+        ]),
       ),
       unlockedPatternIds: Array.from(
         new Set([...initial.unlockedPatternIds, ...(parsed.unlockedPatternIds || [])]),
@@ -176,6 +261,7 @@ export function usePaperPetsStore(pauseDecay: boolean) {
   const [welcomeNotice, setWelcomeNotice] = useState<AwaySummary | null>(awaySummary);
   const [checkInNotice, setCheckInNotice] = useState<CheckInRewardNotice | null>(null);
   const [hasUnsavedRoomChanges, setHasUnsavedRoomChanges] = useState<boolean>(false);
+  const [hasUnsavedOutfitChanges, setHasUnsavedOutfitChanges] = useState<boolean>(false);
 
   // Keep sound mute synced
   useEffect(() => {
@@ -184,15 +270,10 @@ export function usePaperPetsStore(pauseDecay: boolean) {
 
   // Persist to localStorage whenever data updates
   useEffect(() => {
-    try {
-      const payload: PaperPetsSaveData = {
-        ...data,
-        lastSavedAt: Date.now(),
-      };
-      localStorage.setItem(SAVE_STORAGE_KEY, JSON.stringify(payload));
-    } catch {
-      // Ignore storage quota errors
-    }
+    persistSaveSync({
+      ...data,
+      lastSavedAt: Date.now(),
+    });
   }, [data]);
 
   // Slow continuous care decay while active on stage
@@ -359,6 +440,7 @@ export function usePaperPetsStore(pauseDecay: boolean) {
     (slot: ClothingSlot, garment: EquippedGarment | null) => {
       sound.playPop();
       if (garment) notifyGrantIfNewDay(140);
+      setHasUnsavedOutfitChanges(true);
       setData((prev) => {
         const petOutfit = { ...(prev.outfits[prev.activePetId] || {}) };
         if (!garment) {
@@ -370,40 +452,62 @@ export function usePaperPetsStore(pauseDecay: boolean) {
         if (garment) {
           nextLastSlots[prev.activePetId] = slot;
         } else if (!nextLastSlots[prev.activePetId] || nextLastSlots[prev.activePetId] === slot) {
-          const fallbackSlot = (['hat', 'eyewear', 'neckwear', 'top'] as ClothingSlot[]).find(
-            (candidate) => Boolean(petOutfit[candidate]),
-          );
+          const fallbackSlot = CLOTHING_SLOTS.find((candidate) => Boolean(petOutfit[candidate]));
           if (fallbackSlot) {
             nextLastSlots[prev.activePetId] = fallbackSlot;
           } else {
             delete nextLastSlots[prev.activePetId];
           }
         }
-        const next = {
+        const baseNext: PaperPetsSaveData = {
           ...prev,
           outfits: {
             ...prev.outfits,
             [prev.activePetId]: petOutfit,
           },
           lastClothingSlots: nextLastSlots,
+          lastSavedAt: Date.now(),
         };
-        return garment ? applyDailyCheckInToSave(next) : next;
+        const next = garment ? applyDailyCheckInToSave(baseNext) : baseNext;
+        persistSaveSync(next);
+        return next;
       });
     },
     [notifyGrantIfNewDay],
   );
+
+  const clearOutfit = useCallback(() => {
+    sound.playClick();
+    setHasUnsavedOutfitChanges(true);
+    setData((prev) => {
+      const nextLastSlots = { ...(prev.lastClothingSlots || {}) };
+      delete nextLastSlots[prev.activePetId];
+      const next: PaperPetsSaveData = {
+        ...prev,
+        outfits: {
+          ...prev.outfits,
+          [prev.activePetId]: {},
+        },
+        lastClothingSlots: nextLastSlots,
+        lastSavedAt: Date.now(),
+      };
+      persistSaveSync(next);
+      return next;
+    });
+  }, []);
 
   const updateEquippedStyle = useCallback(
     (
       slot: ClothingSlot,
       updates: Partial<Pick<EquippedGarment, 'colorHex' | 'patternId' | 'nudgeX' | 'nudgeY' | 'nudgeScale'>>,
     ) => {
+      setHasUnsavedOutfitChanges(true);
       setData((prev) => {
         const petOutfit = { ...(prev.outfits[prev.activePetId] || {}) };
         const current = petOutfit[slot];
         if (!current) return prev;
         petOutfit[slot] = { ...current, ...updates };
-        return {
+        const next: PaperPetsSaveData = {
           ...prev,
           outfits: {
             ...prev.outfits,
@@ -413,7 +517,10 @@ export function usePaperPetsStore(pauseDecay: boolean) {
             ...(prev.lastClothingSlots || {}),
             [prev.activePetId]: slot,
           },
+          lastSavedAt: Date.now(),
         };
+        persistSaveSync(next);
+        return next;
       });
     },
     [],
@@ -643,11 +750,12 @@ export function usePaperPetsStore(pauseDecay: boolean) {
       if (!unlocked) sound.playCoin();
       else sound.playPop();
       notifyGrantIfNewDay(180);
+      setHasUnsavedOutfitChanges(true);
 
       setData((prev) => {
         const already = prev.unlockedClothingIds.includes(item.id);
         const petOutfit = { ...(prev.outfits[prev.activePetId] || {}), [slot]: garment };
-        return applyDailyCheckInToSave({
+        const next = applyDailyCheckInToSave({
           ...prev,
           coins: already ? prev.coins : prev.coins - item.price,
           unlockedClothingIds: already
@@ -661,7 +769,10 @@ export function usePaperPetsStore(pauseDecay: boolean) {
             ...(prev.lastClothingSlots || {}),
             [prev.activePetId]: slot,
           },
+          lastSavedAt: Date.now(),
         });
+        persistSaveSync(next);
+        return next;
       });
       return true;
     },
@@ -677,6 +788,7 @@ export function usePaperPetsStore(pauseDecay: boolean) {
 
       if (!unlocked) sound.playCoin();
       else sound.playClick();
+      setHasUnsavedOutfitChanges(true);
 
       setData((prev) => {
         const petOutfit = { ...(prev.outfits[prev.activePetId] || {}) };
@@ -684,7 +796,7 @@ export function usePaperPetsStore(pauseDecay: boolean) {
         if (!current) return prev;
         const already = prev.unlockedPatternIds.includes(patternId);
         petOutfit[slot] = { ...current, patternId };
-        return {
+        const next: PaperPetsSaveData = {
           ...prev,
           coins: already ? prev.coins : prev.coins - pat.price,
           unlockedPatternIds: already
@@ -698,7 +810,10 @@ export function usePaperPetsStore(pauseDecay: boolean) {
             ...(prev.lastClothingSlots || {}),
             [prev.activePetId]: slot,
           },
+          lastSavedAt: Date.now(),
         };
+        persistSaveSync(next);
+        return next;
       });
       return true;
     },
@@ -725,6 +840,108 @@ export function usePaperPetsStore(pauseDecay: boolean) {
     [notifyGrantIfNewDay],
   );
 
+  const saveOutfitNow = useCallback((): number => {
+    const now = Date.now();
+    sound.playSuccess();
+    setHasUnsavedOutfitChanges(false);
+    setData((prev) => {
+      const next: PaperPetsSaveData = {
+        ...prev,
+        lastSavedAt: now,
+        lastOutfitSaveAt: now,
+      };
+      persistSaveSync(next);
+      return next;
+    });
+    return now;
+  }, []);
+
+  const saveOutfitSlot = useCallback(
+    (customName?: string): SavedOutfitSlot => {
+      const now = Date.now();
+      const petId = data.activePetId;
+      const petName = data.petNames[petId] || 'Pet';
+      const existingSlots = data.savedOutfitSlots || [];
+      const samePetCount = existingSlots.filter((s) => s.petId === petId).length + 1;
+      const slotName = customName?.trim()
+        ? customName.trim().slice(0, 32)
+        : `${petName} Look #${samePetCount}`;
+
+      const snapshot: SavedOutfitSlot = {
+        id: `look_${now}_${Math.random().toString(36).slice(2, 6)}`,
+        petId,
+        name: slotName,
+        outfit: sanitizeOutfit(structuredClone(data.outfits[petId] || {})),
+        savedAt: now,
+      };
+
+      sound.playSuccess();
+      setHasUnsavedOutfitChanges(false);
+      setData((prev) => {
+        const next: PaperPetsSaveData = {
+          ...prev,
+          lastSavedAt: now,
+          lastOutfitSaveAt: now,
+          savedOutfitSlots: [snapshot, ...(prev.savedOutfitSlots || [])].slice(0, 18),
+        };
+        persistSaveSync(next);
+        return next;
+      });
+      return snapshot;
+    },
+    [data.activePetId, data.outfits, data.petNames, data.savedOutfitSlots],
+  );
+
+  const loadOutfitSlot = useCallback(
+    (slotId: string): boolean => {
+      const slot = (data.savedOutfitSlots || []).find((s) => s.id === slotId);
+      if (!slot) return false;
+      sound.playPop();
+      setHasUnsavedOutfitChanges(false);
+      setData((prev) => {
+        const now = Date.now();
+        const cloned = sanitizeOutfit(structuredClone(slot.outfit));
+        const itemIds = CLOTHING_SLOTS.map((s) => cloned[s]?.itemId).filter(
+          (id): id is string => Boolean(id),
+        );
+        const firstSlot = CLOTHING_SLOTS.find((s) => Boolean(cloned[s]));
+        const nextLastSlots = { ...(prev.lastClothingSlots || {}) };
+        if (firstSlot) {
+          nextLastSlots[prev.activePetId] = firstSlot;
+        } else {
+          delete nextLastSlots[prev.activePetId];
+        }
+        const next: PaperPetsSaveData = {
+          ...prev,
+          lastSavedAt: now,
+          lastOutfitSaveAt: now,
+          unlockedClothingIds: Array.from(new Set([...prev.unlockedClothingIds, ...itemIds])),
+          outfits: {
+            ...prev.outfits,
+            [prev.activePetId]: cloned,
+          },
+          lastClothingSlots: nextLastSlots,
+        };
+        persistSaveSync(next);
+        return next;
+      });
+      return true;
+    },
+    [data.savedOutfitSlots],
+  );
+
+  const deleteOutfitSlot = useCallback((slotId: string) => {
+    sound.playClick();
+    setData((prev) => {
+      const next: PaperPetsSaveData = {
+        ...prev,
+        savedOutfitSlots: (prev.savedOutfitSlots || []).filter((s) => s.id !== slotId),
+      };
+      persistSaveSync(next);
+      return next;
+    });
+  }, []);
+
   const saveRoomNow = useCallback((): number => {
     const now = Date.now();
     sound.playSuccess();
@@ -735,11 +952,7 @@ export function usePaperPetsStore(pauseDecay: boolean) {
         lastSavedAt: now,
         lastRoomSaveAt: now,
       };
-      try {
-        localStorage.setItem(SAVE_STORAGE_KEY, JSON.stringify(next));
-      } catch {
-        // Ignore storage quota errors
-      }
+      persistSaveSync(next);
       return next;
     });
     return now;
@@ -774,11 +987,7 @@ export function usePaperPetsStore(pauseDecay: boolean) {
           lastRoomSaveAt: now,
           savedRoomSlots: [snapshot, ...prev.savedRoomSlots].slice(0, 18),
         };
-        try {
-          localStorage.setItem(SAVE_STORAGE_KEY, JSON.stringify(next));
-        } catch {
-          // Ignore storage quota errors
-        }
+        persistSaveSync(next);
         return next;
       });
       return snapshot;
@@ -811,11 +1020,7 @@ export function usePaperPetsStore(pauseDecay: boolean) {
             [targetBgId]: cloned,
           },
         };
-        try {
-          localStorage.setItem(SAVE_STORAGE_KEY, JSON.stringify(next));
-        } catch {
-          // Ignore storage quota errors
-        }
+        persistSaveSync(next);
         return next;
       });
       return true;
@@ -845,21 +1050,21 @@ export function usePaperPetsStore(pauseDecay: boolean) {
             : slot,
         ),
       };
-      try {
-        localStorage.setItem(SAVE_STORAGE_KEY, JSON.stringify(next));
-      } catch {
-        // Ignore storage quota errors
-      }
+      persistSaveSync(next);
       return next;
     });
   }, []);
 
   const deleteRoomLayoutSlot = useCallback((slotId: string) => {
     sound.playClick();
-    setData((prev) => ({
-      ...prev,
-      savedRoomSlots: prev.savedRoomSlots.filter((s) => s.id !== slotId),
-    }));
+    setData((prev) => {
+      const next: PaperPetsSaveData = {
+        ...prev,
+        savedRoomSlots: prev.savedRoomSlots.filter((s) => s.id !== slotId),
+      };
+      persistSaveSync(next);
+      return next;
+    });
   }, []);
 
   const toggleMute = useCallback(() => {
@@ -874,6 +1079,7 @@ export function usePaperPetsStore(pauseDecay: boolean) {
     welcomeNotice,
     checkInNotice,
     hasUnsavedRoomChanges,
+    hasUnsavedOutfitChanges,
     dismissWelcomeNotice,
     dismissCheckInNotice,
     recordPetInteraction,
@@ -886,7 +1092,12 @@ export function usePaperPetsStore(pauseDecay: boolean) {
     giveLove,
     feedPet,
     equipGarment,
+    clearOutfit,
     updateEquippedStyle,
+    saveOutfitNow,
+    saveOutfitSlot,
+    loadOutfitSlot,
+    deleteOutfitSlot,
     addPlacedDecoration,
     updatePlacedDecoration,
     removePlacedDecoration,

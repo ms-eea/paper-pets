@@ -6,6 +6,8 @@ interface Props {
   colorHex: string;
   patternId: PatternId;
   className?: string;
+  interactive?: boolean;
+  onSelect?: () => void;
 }
 
 /**
@@ -17,13 +19,22 @@ export const GarmentSvg: React.FC<Props> = ({
   colorHex,
   patternId,
   className = 'w-full h-full',
+  interactive = false,
+  onSelect,
 }) => {
   const uid = useId().replace(/:/g, '');
   const patKey = `pat_${uid}`;
   const fillRef = patternId === 'solid' ? colorHex : `url(#${patKey})`;
 
   return (
-    <svg viewBox="0 0 160 120" className={className} style={{ overflow: 'visible' }}>
+    <svg
+      viewBox="0 0 160 120"
+      className={className}
+      style={{
+        overflow: 'visible',
+        ...(interactive ? { pointerEvents: 'none' } : {}),
+      }}
+    >
       <defs>
         {patternId === 'polka' && (
           <pattern id={patKey} width="18" height="18" patternUnits="userSpaceOnUse">
@@ -117,6 +128,28 @@ export const GarmentSvg: React.FC<Props> = ({
         )}
       </defs>
 
+      <g
+        onPointerDown={
+          interactive
+            ? (e) => {
+                e.stopPropagation();
+              }
+            : undefined
+        }
+        onClick={
+          interactive && onSelect
+            ? (e) => {
+                e.stopPropagation();
+                onSelect();
+              }
+            : undefined
+        }
+        style={
+          interactive
+            ? { pointerEvents: 'visiblePainted', cursor: 'pointer' }
+            : undefined
+        }
+      >
       {/* HATS (unified y=70 bottom brim baseline) */}
       {itemId === 'hat_beret' && (
         <g>
@@ -694,6 +727,7 @@ export const GarmentSvg: React.FC<Props> = ({
           <path d="M98 72 Q103 66 106 72 Q109 66 114 72 Q109 76 106 74 Q103 76 98 72 Z" fill="#F2CC66" stroke="#3D312A" strokeWidth="1.5" />
         </g>
       )}
+      </g>
     </svg>
   );
 };

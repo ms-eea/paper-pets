@@ -1,14 +1,15 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   ArrowDown,
   ArrowLeft,
   ArrowRight,
   ArrowUp,
-  ChevronLeft,
-  ChevronRight,
+  Bookmark,
+  Check,
   Minus,
   Plus,
   RotateCcw,
+  Save,
   Shirt,
   Sliders,
   Trash2,
@@ -24,17 +25,30 @@ import {
   ClothingSlot,
   EquippedGarment,
   PatternId,
+  PetId,
   PetOutfit,
+  SavedOutfitSlot,
 } from '../../types/game';
 import { GarmentSvg } from '../svg/GarmentSvg';
 
 interface Props {
+  petId: PetId;
+  petName: string;
   coins: number;
   outfit: PetOutfit;
   lastClothingSlot?: ClothingSlot;
+  focusRequest?: { slot: ClothingSlot; token: number } | null;
+  hasUnsavedOutfitChanges: boolean;
+  lastOutfitSaveAt?: number;
+  savedOutfitSlots: SavedOutfitSlot[];
   unlockedClothingIds: string[];
   unlockedPatternIds: PatternId[];
   onEquip: (slot: ClothingSlot, garment: EquippedGarment | null) => void;
+  onClearOutfit: () => void;
+  onSaveOutfitNow: () => void;
+  onSaveOutfitSlot: (customName?: string) => void;
+  onLoadOutfitSlot: (slotId: string) => void;
+  onDeleteOutfitSlot: (slotId: string) => void;
   onBuyAndEquipClothing: (slot: ClothingSlot, garment: EquippedGarment) => void;
   onBuyAndApplyPattern: (slot: ClothingSlot, patternId: PatternId) => void;
   onUpdateStyle: (
@@ -62,13 +76,32 @@ function resolveInitialSlot(outfit: PetOutfit, lastClothingSlot?: ClothingSlot):
   return firstWorn ? firstWorn.id : 'hat';
 }
 
+function formatSavedTime(ts?: number): string {
+  if (!ts) return '';
+  const diffMin = Math.floor((Date.now() - ts) / 60000);
+  if (diffMin < 1) return 'Just now';
+  if (diffMin < 60) return `${diffMin}m ago`;
+  return new Date(ts).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+}
+
 export const DressUpDrawer: React.FC<Props> = ({
+  petId,
+  petName,
   coins,
   outfit,
   lastClothingSlot,
+  focusRequest = null,
+  hasUnsavedOutfitChanges,
+  lastOutfitSaveAt,
+  savedOutfitSlots,
   unlockedClothingIds,
   unlockedPatternIds,
   onEquip,
+  onClearOutfit,
+  onSaveOutfitNow,
+  onSaveOutfitSlot,
+  onLoadOutfitSlot,
+  onDeleteOutfitSlot,
   onBuyAndEquipClothing,
   onBuyAndApplyPattern,
   onUpdateStyle,
@@ -76,13 +109,21 @@ export const DressUpDrawer: React.FC<Props> = ({
   onClose,
 }) => {
   const [activeSlot, setActiveSlot] = useState<ClothingSlot>(() =>
-    resolveInitialSlot(outfit, lastClothingSlot),
+    focusRequest?.slot ?? resolveInitialSlot(outfit, lastClothingSlot),
   );
   const [subFilter, setSubFilter] = useState<string>('all');
-  const [viewMode, setViewMode] = useState<'choose' | 'style'>(() => {
-    const initial = resolveInitialSlot(outfit, lastClothingSlot);
+  const [lookNameInput, setLookNameInput] = useState('');
+  const [viewMode, setViewMode] = useState<'choose' | 'style' | 'saved'>(() => {
+    const initial = focusRequest?.slot ?? resolveInitialSlot(outfit, lastClothingSlot);
     return outfit[initial] ? 'style' : 'choose';
   });
+
+  useEffect(() => {
+    if (!focusRequest) return;
+    setActiveSlot(focusRequest.slot);
+    setSubFilter('all');
+    setViewMode(outfit[focusRequest.slot] ? 'style' : 'choose');
+  }, [focusRequest?.token]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const slotMeta = SLOTS.find((s) => s.id === activeSlot) || SLOTS[0];
 
@@ -97,57 +138,10 @@ export const DressUpDrawer: React.FC<Props> = ({
     [outfit],
   );
 
-  const wornTrackRef = useRef<HTMLDivElement | null>(null);
-  const wornCardRefs = useRef<Partial<Record<ClothingSlot, HTMLDivElement | null>>>({});
-  const [scrollBounds, setScrollBounds] = useState({ left: false, right: false });
-
-  const updateScrollBounds = useCallback(() => {
-    const el = wornTrackRef.current;
-    if (!el) {
-      setScrollBounds((prev) => (prev.left || prev.right ? { left: false, right: false } : prev));
-      return;
-    }
-    const left = el.scrollLeft > 4;
-    const right = el.scrollLeft + el.clientWidth < el.scrollWidth - 4;
-    setScrollBounds((prev) =>
-      prev.left === left && prev.right === right ? prev : { left, right },
-    );
-  }, []);
-
-  useEffect(() => {
-    const raf = window.requestAnimationFrame(updateScrollBounds);
-    const el = wornTrackRef.current;
-    let observer: ResizeObserver | null = null;
-    if (el && typeof ResizeObserver !== 'undefined') {
-      observer = new ResizeObserver(() => updateScrollBounds());
-      observer.observe(el);
-    }
-    window.addEventListener('resize', updateScrollBounds);
-    return () => {
-      window.cancelAnimationFrame(raf);
-      observer?.disconnect();
-      window.removeEventListener('resize', updateScrollBounds);
-    };
-  }, [wornEntries.length, updateScrollBounds]);
-
-  useEffect(() => {
-    const activeCard = wornCardRefs.current[activeSlot];
-    if (!activeCard) return;
-    activeCard.scrollIntoView({
-      behavior: 'smooth',
-      inline: 'nearest',
-      block: 'nearest',
-    });
-    const timer = window.setTimeout(updateScrollBounds, 260);
-    return () => window.clearTimeout(timer);
-  }, [activeSlot, updateScrollBounds]);
-
-  const scrollWornStrip = (direction: -1 | 1) => {
-    const el = wornTrackRef.current;
-    if (!el) return;
-    const step = Math.max(200, Math.round(el.clientWidth * 0.8));
-    el.scrollBy({ left: direction * step, behavior: 'smooth' });
-  };
+  const petSavedLooks = useMemo(
+    () => savedOutfitSlots.filter((s) => s.petId === petId),
+    [savedOutfitSlots, petId],
+  );
 
   const slotItems = useMemo(
     () => CLOTHING_CATALOG.filter((item) => item.slot === activeSlot),
@@ -191,8 +185,12 @@ export const DressUpDrawer: React.FC<Props> = ({
     ? CLOTHING_CATALOG.find((c) => c.id === currentEquipped.itemId) || null
     : null;
 
-  const effectiveView: 'choose' | 'style' =
-    viewMode === 'style' && currentEquipped ? 'style' : 'choose';
+  const effectiveView: 'choose' | 'style' | 'saved' =
+    viewMode === 'saved'
+      ? 'saved'
+      : viewMode === 'style' && currentEquipped
+        ? 'style'
+        : 'choose';
 
   const nudgeX = currentEquipped?.nudgeX ?? 0;
   const nudgeY = currentEquipped?.nudgeY ?? 0;
@@ -214,29 +212,140 @@ export const DressUpDrawer: React.FC<Props> = ({
     <aside className="fixed inset-x-0 bottom-[calc(60px+env(safe-area-inset-bottom))] sm:bottom-20 md:inset-x-auto md:right-5 md:top-24 md:bottom-24 z-30 h-[50dvh] max-h-[55dvh] md:h-auto md:max-h-none md:w-[368px] paper-card rounded-t-2xl md:rounded-2xl flex flex-col overflow-hidden">
       <div className="md:hidden w-10 h-1 rounded-full bg-[#CEB99C] mx-auto mt-2 mb-0.5 shrink-0" />
       {/* Header */}
-      <div className="px-4 py-2.5 md:py-3 border-b border-[#D6C4AC] bg-[#F3EBDD] flex items-center justify-between">
-        <div>
+      <div className="px-4 py-2.5 md:py-3 border-b border-[#D6C4AC] bg-[#F3EBDD] flex items-center justify-between gap-2 shrink-0">
+        <div className="min-w-0">
           <h3 className="font-display text-base md:text-lg font-bold text-[#3D312A] leading-tight">
             Paper Wardrobe
           </h3>
-          <p className="text-xs text-[#6E5D52] hidden sm:block">
-            Equip a piece, then fine-tune its fit, color &amp; pattern
+          <p className="text-xs text-[#6E5D52] hidden sm:block truncate">
+            {petName}&apos;s outfits — pick, fit &amp; save looks
           </p>
         </div>
-        <button
-          type="button"
-          onClick={onClose}
-          aria-label="Close wardrobe"
-          className="w-10 h-10 md:w-8 md:h-8 rounded-lg hover:bg-[#E8DCC8] flex items-center justify-center text-[#3D312A] cursor-pointer"
-        >
-          <X className="w-4 h-4" />
-        </button>
+        <div className="flex items-center gap-1.5 shrink-0">
+          <button
+            type="button"
+            onClick={onSaveOutfitNow}
+            title="Save current outfit for your next visit"
+            className={`min-h-[34px] md:min-h-[30px] px-2.5 py-1 rounded-lg text-xs font-bold flex items-center gap-1 border transition-colors whitespace-nowrap cursor-pointer ${
+              hasUnsavedOutfitChanges
+                ? 'bg-[#D95D39] hover:bg-[#C24D2B] text-white border-[#B83B1D]'
+                : 'bg-[#E5F2EE] hover:bg-[#D5EBE4] text-[#2F7D6D] border-[#2F7D6D]/40'
+            }`}
+          >
+            {hasUnsavedOutfitChanges ? (
+              <>
+                <Save className="w-3.5 h-3.5 shrink-0" />
+                <span>Save</span>
+              </>
+            ) : (
+              <>
+                <Check className="w-3.5 h-3.5 shrink-0" />
+                <span>Saved</span>
+              </>
+            )}
+          </button>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close wardrobe"
+            className="w-10 h-10 md:w-8 md:h-8 rounded-lg hover:bg-[#E8DCC8] flex items-center justify-center text-[#3D312A] cursor-pointer"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
       </div>
 
+      {/* Vertical Stacked Wearing Now List (above category tabs, never clipped) */}
+      {wornEntries.length > 0 && (
+        <div className="px-3 py-2 bg-[#FBF7F0] border-b border-[#E8DCC8] shrink-0">
+          <div className="flex items-center justify-between gap-2 mb-1.5">
+            <span className="text-[11px] font-bold text-[#6E5D52]">
+              Wearing Now · {wornEntries.length} {wornEntries.length === 1 ? 'item' : 'items'}
+            </span>
+            {wornEntries.length >= 2 && (
+              <button
+                type="button"
+                onClick={() => {
+                  onClearOutfit();
+                  if (effectiveView === 'style') setViewMode('choose');
+                }}
+                className="text-[11px] font-bold text-[#B83B1D] hover:underline whitespace-nowrap cursor-pointer"
+              >
+                Take Off All
+              </button>
+            )}
+          </div>
+          <div className="max-h-[108px] sm:max-h-[126px] overflow-y-auto overscroll-contain craft-scroll space-y-1.5 pr-0.5">
+            {wornEntries.map(({ slotMeta: itemSlot, garment, def }) => {
+              const isEditingThis =
+                activeSlot === itemSlot.id && effectiveView === 'style';
+              return (
+                <div
+                  key={itemSlot.id}
+                  className={`w-full rounded-xl border px-2.5 py-1.5 flex items-center justify-between gap-2 ${
+                    isEditingThis
+                      ? 'bg-[#FFF7EE] border-[#D95D39]'
+                      : 'bg-[#F3EBDD] border-[#D6C4AC]'
+                  }`}
+                >
+                  <div className="flex items-center gap-2 min-w-0 flex-1">
+                    <div className="w-8 h-8 rounded-lg bg-[#FBF7F0] border border-[#E8DCC8] flex items-center justify-center shrink-0">
+                      <GarmentSvg
+                        itemId={garment.itemId}
+                        colorHex={garment.colorHex}
+                        patternId={garment.patternId}
+                        className="w-7 h-7"
+                      />
+                    </div>
+                    <div className="min-w-0">
+                      <div className="text-xs font-bold text-[#3D312A] truncate">
+                        {def?.name || 'Saved Piece'}
+                      </div>
+                      <div className="text-[10px] text-[#6E5D52] truncate">{itemSlot.label}</div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setActiveSlot(itemSlot.id);
+                        setSubFilter('all');
+                        setViewMode('style');
+                      }}
+                      className={`min-h-[32px] px-2.5 py-1 rounded-lg text-[11px] font-bold flex items-center gap-1 whitespace-nowrap cursor-pointer ${
+                        isEditingThis
+                          ? 'bg-[#D95D39] text-white'
+                          : 'bg-[#FBF7F0] text-[#3D312A] border border-[#D6C4AC] hover:bg-[#E8DCC8]'
+                      }`}
+                    >
+                      <Sliders className="w-3 h-3 shrink-0" />
+                      <span>Edit</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        onEquip(itemSlot.id, null);
+                        if (itemSlot.id === activeSlot && effectiveView === 'style') {
+                          setViewMode('choose');
+                        }
+                      }}
+                      className="min-h-[32px] px-2.5 py-1 rounded-lg bg-[#FCE6E0] hover:bg-[#F7CFC4] border border-[#E5ACA0] text-[11px] font-bold text-[#B83B1D] flex items-center gap-1 whitespace-nowrap cursor-pointer"
+                    >
+                      <Trash2 className="w-3 h-3 shrink-0" />
+                      <span>Take Off</span>
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       {/* Slot Tabs */}
-      <div className="px-3 pt-2.5 pb-2 flex items-center gap-1 border-b border-[#E8DCC8] shrink-0">
+      <div className="px-3 pt-2 pb-2 flex items-center gap-1 border-b border-[#E8DCC8] shrink-0">
         {SLOTS.map((s) => {
-          const active = s.id === activeSlot;
+          const active = s.id === activeSlot && effectiveView !== 'saved';
           const hasEquipped = Boolean(outfit[s.id]);
           return (
             <button
@@ -260,154 +369,26 @@ export const DressUpDrawer: React.FC<Props> = ({
         })}
       </div>
 
-      {/* Wearing Now Quick-Edit Strip */}
-      {wornEntries.length > 0 && (
-        <div className="px-3 py-2 bg-[#FBF7F0] border-b border-[#E8DCC8] shrink-0">
-          <div className="flex items-center justify-between gap-2 mb-1.5">
-            <span className="text-[11px] font-bold text-[#6E5D52]">
-              Wearing Now · {wornEntries.length} saved
-            </span>
-            {(scrollBounds.left || scrollBounds.right) && (
-              <span className="text-[10px] font-medium text-[#8E7C6E] whitespace-nowrap">
-                Use arrows or scroll
-              </span>
-            )}
-          </div>
-          <div className="flex items-stretch gap-1.5">
-            {(wornEntries.length > 1 || scrollBounds.left || scrollBounds.right) && (
-              <button
-                type="button"
-                onClick={() => scrollWornStrip(-1)}
-                disabled={!scrollBounds.left}
-                aria-label="Scroll worn items left"
-                title="Previous worn items"
-                className={`w-8 shrink-0 rounded-xl border flex items-center justify-center transition-colors ${
-                  scrollBounds.left
-                    ? 'bg-[#F3EBDD] hover:bg-[#E8DCC8] border-[#C9B393] text-[#3D312A] cursor-pointer'
-                    : 'bg-[#F6EFE3] border-[#E8DCC8] text-[#B8A794] cursor-not-allowed'
-                }`}
-              >
-                <ChevronLeft className="w-4 h-4" />
-              </button>
-            )}
-
-            <div
-              ref={wornTrackRef}
-              onScroll={updateScrollBounds}
-              onWheel={(e) => {
-                const el = wornTrackRef.current;
-                if (!el || el.scrollWidth <= el.clientWidth + 4) return;
-                if (Math.abs(e.deltaY) > Math.abs(e.deltaX) && e.deltaY !== 0) {
-                  el.scrollLeft += e.deltaY;
-                }
-              }}
-              className="flex-1 min-w-0 flex items-stretch gap-2 overflow-x-auto scroll-smooth craft-scroll pb-0.5"
-            >
-              {wornEntries.map(({ slotMeta: itemSlot, garment, def }) => {
-                const isEditingThis =
-                  activeSlot === itemSlot.id && effectiveView === 'style';
-                return (
-                  <div
-                    key={itemSlot.id}
-                    ref={(node) => {
-                      wornCardRefs.current[itemSlot.id] = node;
-                    }}
-                    className={`shrink-0 rounded-xl border px-2 py-1.5 flex items-center gap-2 ${
-                      isEditingThis
-                        ? 'bg-[#FFF7EE] border-[#D95D39]'
-                        : 'bg-[#F3EBDD] border-[#D6C4AC]'
-                    }`}
-                  >
-                    <div className="w-8 h-8 rounded-lg bg-[#FBF7F0] border border-[#E8DCC8] flex items-center justify-center shrink-0">
-                      <GarmentSvg
-                        itemId={garment.itemId}
-                        colorHex={garment.colorHex}
-                        patternId={garment.patternId}
-                        className="w-7 h-7"
-                      />
-                    </div>
-                    <div className="min-w-0 max-w-[96px]">
-                      <div className="text-[11px] font-bold text-[#3D312A] truncate">
-                        {def?.name || 'Saved Piece'}
-                      </div>
-                      <div className="text-[10px] text-[#6E5D52] truncate">{itemSlot.label}</div>
-                    </div>
-                    <div className="flex items-center gap-1 shrink-0">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setActiveSlot(itemSlot.id);
-                          setSubFilter('all');
-                          setViewMode('style');
-                        }}
-                        className={`min-h-[32px] px-2 py-1 rounded-lg text-[11px] font-bold flex items-center gap-1 whitespace-nowrap cursor-pointer ${
-                          isEditingThis
-                            ? 'bg-[#D95D39] text-white'
-                            : 'bg-[#FBF7F0] text-[#3D312A] border border-[#D6C4AC] hover:bg-[#E8DCC8]'
-                        }`}
-                      >
-                        <Sliders className="w-3 h-3 shrink-0" />
-                        <span>Edit</span>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          onEquip(itemSlot.id, null);
-                          if (itemSlot.id === activeSlot) {
-                            setViewMode('choose');
-                          }
-                        }}
-                        className="min-h-[32px] px-2 py-1 rounded-lg bg-[#FCE6E0] hover:bg-[#F7CFC4] border border-[#E5ACA0] text-[11px] font-bold text-[#B83B1D] flex items-center gap-1 whitespace-nowrap cursor-pointer"
-                      >
-                        <Trash2 className="w-3 h-3 shrink-0" />
-                        <span>Take Off</span>
-                      </button>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-
-            {(wornEntries.length > 1 || scrollBounds.left || scrollBounds.right) && (
-              <button
-                type="button"
-                onClick={() => scrollWornStrip(1)}
-                disabled={!scrollBounds.right}
-                aria-label="Scroll worn items right"
-                title="Next worn items"
-                className={`w-8 shrink-0 rounded-xl border flex items-center justify-center transition-colors ${
-                  scrollBounds.right
-                    ? 'bg-[#F3EBDD] hover:bg-[#E8DCC8] border-[#C9B393] text-[#3D312A] cursor-pointer'
-                    : 'bg-[#F6EFE3] border-[#E8DCC8] text-[#B8A794] cursor-not-allowed'
-                }`}
-              >
-                <ChevronRight className="w-4 h-4" />
-              </button>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* Primary Two-Step Mode Switcher: Choose Piece vs Fine-Tune & Style */}
-      <div className="px-3 py-2 bg-[#F6EFE3] border-b border-[#E8DCC8] grid grid-cols-2 gap-1.5 shrink-0">
+      {/* Primary Three-Mode Switcher: Choose Piece | Fine-Tune & Style | Saved Looks */}
+      <div className="px-3 py-2 bg-[#F6EFE3] border-b border-[#E8DCC8] grid grid-cols-3 gap-1.5 shrink-0">
         <button
           type="button"
           onClick={() => setViewMode('choose')}
-          className={`min-h-[36px] py-1.5 px-2.5 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-colors whitespace-nowrap cursor-pointer ${
+          className={`min-h-[34px] py-1.5 px-2 rounded-lg text-xs font-bold flex items-center justify-center gap-1 transition-colors whitespace-nowrap cursor-pointer ${
             effectiveView === 'choose'
               ? 'bg-[#2F7D6D] text-white'
               : 'bg-[#FBF7F0] text-[#3D312A] border border-[#D6C4AC] hover:bg-[#F3EBDD]'
           }`}
         >
           <Shirt className="w-3.5 h-3.5 shrink-0" />
-          <span>Choose Piece</span>
+          <span>Choose</span>
         </button>
 
         <button
           type="button"
           disabled={!currentEquipped}
           onClick={() => setViewMode('style')}
-          className={`min-h-[36px] py-1.5 px-2.5 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-colors whitespace-nowrap ${
+          className={`min-h-[34px] py-1.5 px-2 rounded-lg text-xs font-bold flex items-center justify-center gap-1 transition-colors whitespace-nowrap ${
             !currentEquipped
               ? 'bg-[#F3EBDD]/60 text-[#9A8879] border border-[#E8DCC8] cursor-not-allowed'
               : effectiveView === 'style'
@@ -416,7 +397,20 @@ export const DressUpDrawer: React.FC<Props> = ({
           }`}
         >
           <Sliders className="w-3.5 h-3.5 shrink-0" />
-          <span>Fine-Tune &amp; Style</span>
+          <span>Fine-Tune</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setViewMode('saved')}
+          className={`min-h-[34px] py-1.5 px-2 rounded-lg text-xs font-bold flex items-center justify-center gap-1 transition-colors whitespace-nowrap cursor-pointer ${
+            effectiveView === 'saved'
+              ? 'bg-[#3D312A] text-[#FBF7F0]'
+              : 'bg-[#FBF7F0] text-[#3D312A] border border-[#D6C4AC] hover:bg-[#F3EBDD]'
+          }`}
+        >
+          <Bookmark className="w-3.5 h-3.5 shrink-0" />
+          <span>Saved ({petSavedLooks.length})</span>
         </button>
       </div>
 
@@ -595,6 +589,140 @@ export const DressUpDrawer: React.FC<Props> = ({
                 </div>
               </section>
             ))}
+          </div>
+        ) : effectiveView === 'saved' ? (
+          <div className="space-y-4">
+            <section className="p-3 rounded-xl bg-[#F3EBDD] border border-[#CEB99C] space-y-2">
+              <div className="flex items-center justify-between gap-2">
+                <div className="text-xs font-bold text-[#3D312A]">
+                  Save {petName}&apos;s Current Outfit
+                </div>
+                {lastOutfitSaveAt && (
+                  <span className="text-[11px] font-medium text-[#6E5D52]">
+                    {hasUnsavedOutfitChanges
+                      ? 'Unsaved edits'
+                      : `Saved ${formatSavedTime(lastOutfitSaveAt)}`}
+                  </span>
+                )}
+              </div>
+              <div className="flex items-center gap-1.5">
+                <input
+                  type="text"
+                  value={lookNameInput}
+                  onChange={(e) => setLookNameInput(e.target.value)}
+                  maxLength={32}
+                  placeholder="Look name (optional)"
+                  className="flex-1 min-w-0 px-2.5 py-2 rounded-lg bg-[#FBF7F0] border border-[#D6C4AC] text-xs font-medium text-[#3D312A] placeholder:text-[#9A8879] focus:outline-none focus:border-[#2F7D6D]"
+                />
+                <button
+                  type="button"
+                  disabled={wornEntries.length === 0}
+                  onClick={() => {
+                    onSaveOutfitSlot(lookNameInput);
+                    setLookNameInput('');
+                  }}
+                  className={`min-h-[34px] px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap flex items-center gap-1 ${
+                    wornEntries.length === 0
+                      ? 'bg-[#E8DCC8] text-[#9A8879] cursor-not-allowed'
+                      : 'bg-[#2F7D6D] hover:bg-[#246356] text-white cursor-pointer'
+                  }`}
+                >
+                  <Bookmark className="w-3.5 h-3.5 shrink-0" />
+                  <span>Save Look</span>
+                </button>
+              </div>
+              {wornEntries.length === 0 && (
+                <p className="text-[11px] text-[#6E5D52]">
+                  Put on at least one hat, glasses, tie, or top to save an outfit look.
+                </p>
+              )}
+            </section>
+
+            <section className="space-y-2">
+              <div className="flex items-baseline justify-between px-0.5">
+                <h4 className="text-[11px] font-bold uppercase tracking-wider text-[#6E5D52]">
+                  Saved Looks for {petName}
+                </h4>
+                <span className="font-mono-num text-[11px] text-[#8E7C6E]">
+                  {petSavedLooks.length}
+                </span>
+              </div>
+
+              {petSavedLooks.length === 0 ? (
+                <div className="p-4 rounded-xl bg-[#FBF7F0] border border-dashed border-[#D6C4AC] text-center text-xs text-[#6E5D52]">
+                  No saved looks yet. Style {petName} and tap <strong>Save Look</strong> above to
+                  keep favorite outfits ready to swap anytime!
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {petSavedLooks.map((slot) => {
+                    const slotPieces = SLOTS.flatMap((s) => {
+                      const g = slot.outfit[s.id];
+                      return g ? [{ slot: s.id, garment: g }] : [];
+                    });
+                    return (
+                      <div
+                        key={slot.id}
+                        className="p-2.5 rounded-xl bg-[#FBF7F0] border border-[#D6C4AC] flex items-center justify-between gap-2"
+                      >
+                        <div className="min-w-0 flex-1 space-y-1">
+                          <div className="text-xs font-bold text-[#3D312A] truncate">
+                            {slot.name}
+                          </div>
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            {slotPieces.map(({ slot: pieceSlot, garment }) => (
+                              <span
+                                key={pieceSlot}
+                                className="w-7 h-7 rounded-lg bg-[#F3EBDD] border border-[#E8DCC8] flex items-center justify-center"
+                              >
+                                <GarmentSvg
+                                  itemId={garment.itemId}
+                                  colorHex={garment.colorHex}
+                                  patternId={garment.patternId}
+                                  className="w-6 h-6"
+                                />
+                              </span>
+                            ))}
+                            <span className="text-[10px] font-medium text-[#6E5D52]">
+                              {slotPieces.length}{' '}
+                              {slotPieces.length === 1 ? 'piece' : 'pieces'} ·{' '}
+                              {formatSavedTime(slot.savedAt)}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-1 shrink-0">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              onLoadOutfitSlot(slot.id);
+                              const firstLoaded = SLOTS.find((s) => Boolean(slot.outfit[s.id]));
+                              if (firstLoaded) {
+                                setActiveSlot(firstLoaded.id);
+                                setViewMode('style');
+                              } else {
+                                setViewMode('choose');
+                              }
+                            }}
+                            className="min-h-[34px] px-2.5 py-1 rounded-lg bg-[#2F7D6D] hover:bg-[#246356] text-white text-xs font-bold whitespace-nowrap cursor-pointer"
+                          >
+                            Wear
+                          </button>
+                          <button
+                            type="button"
+                            aria-label={`Delete saved look ${slot.name}`}
+                            onClick={() => onDeleteOutfitSlot(slot.id)}
+                            className="min-h-[34px] min-w-[34px] p-1.5 rounded-lg bg-[#FCE6E0] hover:bg-[#F7CFC4] border border-[#E5ACA0] text-[#B83B1D] flex items-center justify-center cursor-pointer"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </section>
           </div>
         ) : (
           currentEquipped && (
